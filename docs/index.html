@@ -141,7 +141,15 @@ a.opt:hover{transform:translateY(-2px)}
 .cell{border-radius:24px;padding:16px 8px;text-align:center;background:color-mix(in srgb,var(--blue) calc(var(--i,0)*1%),var(--chip));
   font-variant-numeric:tabular-nums;font-weight:600;font-size:19px;letter-spacing:-.03em}
 .cell small{display:block;font-weight:400;font-size:11px;color:var(--muted);margin-top:2px;letter-spacing:0}
-.cell.best{outline:2px solid var(--ink);outline-offset:2px}
+.cell[data-k]{position:relative;cursor:pointer;transition:transform .15s,outline-color .15s}
+.cell[data-k]:hover{transform:translateY(-2px)}
+.cell[data-k]:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.cell.sel{outline:2px solid var(--ink);outline-offset:2px}
+.bul{position:absolute;top:10px;left:12px;width:16px;height:16px;border-radius:50%;border:1.6px solid var(--muted);background:transparent;transition:border-color .15s}
+.cell.sel .bul{border-color:var(--ink)}
+.cell.sel .bul::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--ink)}
+.back{font:inherit;font-size:12px;margin-left:8px;padding:2px 10px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--text);cursor:pointer}
+.back:hover{background:var(--chip)}
 .cell.na{background:transparent;border:1px dashed var(--line);color:var(--muted);font-weight:400;font-size:14px}
 .hint{color:var(--muted);font-size:13px;margin-top:14px}
 footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-height:1.6}
@@ -305,25 +313,29 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     var avg = r30.reduce(function (s, r) { return s + r.preco; }, 0) / r30.length;
     var dias = {}; rows.forEach(function (r) { dias[r.consulta] = 1; });
     var nDias = Object.keys(dias).length;
-    var diff = (best.preco / avg - 1) * 100;
     var teto = d.teto || 0;
-
-    var chips = "";
-    if (r30.length >= 6 && nDias >= 3) {
-      chips += '<span class="chip ' + (diff <= 0 ? "good" : "") + '">' + (diff <= 0 ? "▼ " : "▲ ") + Math.abs(diff).toFixed(0) + "% vs. média de 30 dias</span>";
-    }
-    if (teto && best.preco <= teto) chips += '<span class="chip good">Abaixo de ' + brl(teto) + "</span>";
-    if (best.preco <= record.preco) chips += '<span class="chip good">Menor preço já visto</span>';
-    chips += '<span class="chip">' + esc(escalas(best.escalas)) + " na ida</span>";
-    var link = safeUrl(best.link);
-
     var ARW = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12L12 4M5 4h7v7"/></svg>';
+
+    function mainHtml(sel) {
+      var isBest = sel === best, diff = (sel.preco / avg - 1) * 100, chips = "";
+      if (r30.length >= 6 && nDias >= 3) {
+        chips += '<span class="chip ' + (diff <= 0 ? "good" : "") + '">' + (diff <= 0 ? "▼ " : "▲ ") + Math.abs(diff).toFixed(0) + "% vs. média de 30 dias</span>";
+      }
+      if (teto && sel.preco <= teto) chips += '<span class="chip good">Abaixo de ' + brl(teto) + "</span>";
+      if (sel.preco <= record.preco) chips += '<span class="chip good">Menor preço já visto</span>';
+      chips += '<span class="chip">' + esc(escalas(sel.escalas)) + " na ida</span>";
+      var link = safeUrl(sel.link);
+      var h = '<div class="label">' + (isBest ? "Melhor preço agora" : "Combinação selecionada") + " · total ida e volta" +
+        (isBest ? "" : ' <button class="back" id="backBest" type="button">Voltar ao melhor preço</button>') + '</div><div class="big">' + brl(sel.preco) + "</div>";
+      h += legs(sel) + '<div class="total">' + noites(sel.ida, sel.volta) + " noites em Aracaju · preço total, ida e volta</div>";
+      h += '<div class="chips" style="margin-top:14px">' + chips + "</div>";
+      if (link) h += '<a class="btn" href="' + esc(link) + '" target="_blank" rel="noopener">Ver no Google Flights ' + ARW.replace("<svg", '<svg width="14" height="14"') + "</a>";
+      return h;
+    }
+
     var html = '<div class="board">';
     html += '<section class="card a-hero fade" id="resumo"><div class="hero"><div>';
-    html += '<div class="label">Melhor preço agora · total ida e volta</div><div class="big">' + brl(best.preco) + "</div>";
-    html += legs(best) + '<div class="total">' + noites(best.ida, best.volta) + " noites em Aracaju · preço total, ida e volta</div>";
-    html += '<div class="chips" style="margin-top:14px">' + chips + "</div>";
-    if (link) html += '<a class="btn" href="' + esc(link) + '" target="_blank" rel="noopener">Ver no Google Flights ' + ARW.replace("<svg", '<svg width="14" height="14"') + "</a>";
+    html += '<div id="heroMain">' + mainHtml(best) + '</div>';
     html += '</div><div class="stats">';
     html += '<div class="stat"><div class="label">Menor preço já visto · ida e volta</div><div class="mid">' + brl(record.preco) + '</div><div class="sub">ida ' + esc(dm(record.ida)) + " · volta " + esc(dm(record.volta)) + " · visto em " + esc(dm(record.consulta)) + "</div></div>";
     html += '<div class="stat"><div class="label">Média dos últimos 30 dias</div><div class="mid">' + (r30.length ? brl(avg) : "—") + '</div><div class="sub">' + r30.length + " consultas em " + nDias + (nDias === 1 ? " dia" : " dias") + "</div></div>";
@@ -340,7 +352,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
       '<div class="list" id="list"></div></section>';
 
     html += '<section class="card a-combos fade" id="combos"><div class="ch"><h2>Por combinação de ida e volta</h2></div><div id="matrix"></div>' +
-      '<p class="hint">Preço total de ida e volta para cada par de datas. Linhas são os dias de ida; colunas, os dias de volta. O contorno marca a melhor opção.</p></section>';
+      '<p class="hint">Preço total de ida e volta para cada par de datas. Linhas são os dias de ida; colunas, os dias de volta. Clique no círculo de uma combinação para ver os detalhes dela no resumo acima.</p></section>';
     html += "</div>";
 
     app.innerHTML = html;
@@ -351,7 +363,26 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
       state.direct = b.dataset.v; setPressed("#segDir", b); drawList(latest);
     });
 
+    var selKey = best.ida + "|" + best.volta;
+    function select(k) {
+      selKey = k;
+      var sel = by[k] || best;
+      $("#heroMain").innerHTML = mainHtml(sel);
+      var bb = $("#backBest"); if (bb) bb.addEventListener("click", function () { select(best.ida + "|" + best.volta); });
+      document.querySelectorAll("#matrix .cell[data-k]").forEach(function (c) {
+        var on = c.dataset.k === k;
+        c.classList.toggle("sel", on); c.setAttribute("aria-checked", on ? "true" : "false");
+      });
+      var top = $("#resumo").getBoundingClientRect().top;
+      if (top < 0) $("#resumo").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
     drawMatrix(by, best);
+    $("#matrix").addEventListener("click", function (e) { var c = e.target.closest(".cell[data-k]"); if (c) select(c.dataset.k); });
+    $("#matrix").addEventListener("keydown", function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      var c = e.target.closest(".cell[data-k]"); if (c) { e.preventDefault(); select(c.dataset.k); }
+    });
+    select(selKey);
     drawDonut(by, avg);
     drawList(latest);
     drawChart();
@@ -377,7 +408,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
         if (!c) { h += '<div class="cell na">sem dados</div>'; return; }
         var t = hi === lo ? 1 : (hi - c.preco) / (hi - lo);
         var cls = c === best ? " best" : "";
-        h += '<div class="cell' + cls + '" style="--i:' + Math.round(10 + t * 38) + '" title="Consultado em ' + esc(dm(c.consulta)) + '">' + brl(c.preco) +
+        h += '<div class="cell' + cls + '" role="radio" tabindex="0" aria-checked="false" data-k="' + i + "|" + v + '" style="--i:' + Math.round(10 + t * 38) + '" title="Consultado em ' + esc(dm(c.consulta)) + '"><span class="bul"></span>' + brl(c.preco) +
           "<small>" + esc(c.origem) + " → " + esc(dest()) + " · " + esc(escalas(c.escalas)) + " na ida</small><small>" + nights + (nights === 1 ? " noite" : " noites") + "</small></div>";
       });
     });
