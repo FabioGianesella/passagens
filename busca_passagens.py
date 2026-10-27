@@ -19,7 +19,7 @@ from pathlib import Path
 ORIGENS = "CGH,GRU,VCP"          # SAO = Congonhas, Guarulhos e Viracopos: sai daqui e volta pra ca
 DESTINO = "AJU"
 IDAS = [date(2026, 11, 23), date(2026, 11, 24), date(2026, 11, 25)]    # dias de ida possiveis
-VOLTAS = [date(2026, 11, 26), date(2026, 11, 27), date(2026, 11, 28)]  # dias de volta possiveis
+VOLTAS = [date(2026, 11, 28)]  # volta fixa em 28/11
 MIN_NOITES = 2                   # minimo de noites entre ida e volta
 MAX_BUSCAS = 4                   # buscas por execucao (2 execucoes/dia: 4 x 2 x 30 = 240 de 250/mes)
 MAX_ESCALAS = 1                  # None = qualquer; 0 = so direto; 1 = ate 1 parada
