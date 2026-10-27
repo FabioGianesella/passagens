@@ -580,6 +580,13 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     var hoje = new Date(Date.now() - 3 * 36e5).toISOString().slice(0, 10);
     var cur = { idas: j.idas.slice(), voltas: j.voltas.slice() }, draft = { idas: j.idas.slice(), voltas: j.voltas.slice() };
     var pick = { ida: null, volta: null }, view = hoje.slice(0, 7);
+    var pendGet = function () { try { return JSON.parse(localStorage.getItem("pend") || "null"); } catch (e) { return null; } };
+    var pendSet = function (v) { try { if (v) localStorage.setItem("pend", JSON.stringify(v)); else localStorage.removeItem("pend"); } catch (e) {} };
+    var sameWin = function (a, b) { return JSON.stringify(a.idas) === JSON.stringify(b.idas) && JSON.stringify(a.voltas) === JSON.stringify(b.voltas); };
+    var pd = pendGet();
+    if (pd && (sameWin(pd, j) || Date.now() - pd.ts > 30 * 60e3)) { pendSet(null); pd = null; }
+    var waiting = !!pd;
+    if (pd) { cur = { idas: pd.idas.slice(), voltas: pd.voltas.slice() }; draft = { idas: pd.idas.slice(), voltas: pd.voltas.slice() }; }
     var cfgJson = function () { return JSON.stringify({ idas: draft.idas, voltas: draft.voltas }, null, 2) + "\n"; };
     var same = function () { return JSON.stringify(draft.idas) === JSON.stringify(cur.idas) && JSON.stringify(draft.voltas) === JSON.stringify(cur.voltas); };
     var pares = function () { var n = 0; draft.idas.forEach(function (i) { draft.voltas.forEach(function (v) { if (noites(i, v) >= min) n++; }); }); return n; };
@@ -594,10 +601,12 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
         ? "<span><b>" + noites(draft.idas[0], draft.voltas[0]) + " noites</b> em Aracaju</span><span>·</span><span>preço total de ida e volta</span>"
         : "<span><b>" + n + (n === 1 ? " combinação válida" : " combinações válidas") + "</b> (mínimo de " + min + " noites)</span>";
       var st = $("#dState"), pend = !same();
-      st.className = "dstate" + (pend ? " pend" : ""); st.lastChild.textContent = pend ? "Alterações não fixadas" : "Fixado";
+      st.className = "dstate" + (pend || waiting ? " pend" : ""); st.lastChild.textContent = pend ? "Alterações não fixadas" : waiting ? "Consultando novo período…" : "Fixado";
       $("#dSave").disabled = !(n > 0);
       if (!(n > 0)) say("Escolha uma ida e uma volta com " + min + " noites ou mais.", "err");
-      else if (!pend) say(""); else say("Alterações ainda não fixadas.");
+      else if (pend) say("Alterações ainda não fixadas.");
+      else if (waiting) say("Datas fixadas. A busca do novo período está rodando; os preços aparecem aqui sozinhos em poucos minutos.", "ok");
+      else say("");
       connPaint();
     }
 
@@ -662,6 +671,21 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     window.__connPaint = connPaint;
     window.__cfgJson = cfgJson;
 
+    function startPoll() {
+      var t0 = Date.now();
+      (function tick() {
+        if (!waiting) return;
+        fetch("data.json?t=" + Date.now(), { cache: "no-store" })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            if (d && d.janela && sameWin(d.janela, cur)) { waiting = false; pendSet(null); state.data = d; render(); }
+            else if (Date.now() - t0 > 15 * 60e3) say("A atualização está demorando. Recarregue a página em alguns minutos.", "err");
+            else setTimeout(tick, 15000);
+          })
+          .catch(function () { setTimeout(tick, 15000); });
+      })();
+    }
+
     // salvar no repositorio
     $("#dSave").addEventListener("click", function () {
       if (same()) { closeCal(); say("Estas datas já estão fixadas. Escolha outras datas para alterar.", ""); return; }
@@ -680,7 +704,8 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
         .then(function (r) {
           if (!r.ok) throw r.status;
           cur = { idas: draft.idas.slice(), voltas: draft.voltas.slice() };
-          paint(); say("Datas fixadas. A busca roda sozinha agora e o painel atualiza em poucos minutos.", "ok");
+          pendSet({ idas: cur.idas, voltas: cur.voltas, ts: Date.now() }); waiting = true;
+          paint(); startPoll();
         })
         .catch(function (c) {
           b.disabled = false;
@@ -688,6 +713,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
         });
     });
     paint();
+    if (waiting) startPoll();
   }
 
   function drawDonut(by, avg) {
