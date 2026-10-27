@@ -10,14 +10,13 @@ import busca_passagens as b
 def main():
     linhas = []
     for l in b.ler_historico():
-        if not b.na_janela(l):
-            continue
         linhas.append({
             "consulta": l["consulta"], "ida": l["ida"], "volta": l["volta"],
             "preco": int(l["preco"]), "origem": l.get("origem", ""), "cia": l.get("cia", ""),
             "escalas": int(l.get("escalas") or 0), "link": l.get("link", ""),
         })
     linhas.sort(key=lambda x: (x["consulta"], x["ida"], x["volta"]))
+    linhas = linhas[-800:]   # historico completo (limitado); o painel filtra pelas datas escolhidas
     dados = {
         "atualizado": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "rota": {"origens": b.ORIGENS, "destino": b.DESTINO},
