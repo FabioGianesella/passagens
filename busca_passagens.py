@@ -8,7 +8,7 @@ Variáveis de ambiente (só 2):
   NTFY_TOPIC    um nome secreto qualquer, ex.: fabio-voos-8k3x (o mesmo que você assina no app ntfy)
 """
 import csv, os, sys, requests
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 # ====================== CONFIGURAÇÃO ======================
@@ -18,7 +18,7 @@ JANELA_INICIO_DIAS = 14     # primeira ida: daqui a X dias
 JANELA_FIM_DIAS = 90        # última ida: daqui a X dias
 PASSO_DIAS = 7              # uma data de ida a cada X dias
 ESTADIAS = [3, 5, 7]        # noites entre ida e volta
-MAX_BUSCAS = 4              # buscas por dia (cabe no plano grátis: 4 x 30 = 120, ajuste se precisar)
+MAX_BUSCAS = 1              # buscas por dia (cabe no plano grátis: 4 x 30 = 120, ajuste se precisar)
 MAX_ESCALAS = None          # None = qualquer; 0 = só direto; 1 = até 1 parada
 HISTORICO = Path(__file__).with_name("historico.csv")
 # ===========================================================
@@ -35,7 +35,7 @@ def combinacoes():
         d += timedelta(days=PASSO_DIAS)
     if len(combos) > MAX_BUSCAS:
         # muda as datas testadas a cada dia, para cobrir a janela inteira ao longo das semanas
-        desloc = hoje.toordinal() % len(combos)
+        desloc = (hoje.toordinal() * 2 + datetime.now().hour // 12) % len(combos)
         combos = combos[desloc:] + combos[:desloc]
         passo = len(combos) / MAX_BUSCAS
         combos = [combos[int(i * passo)] for i in range(MAX_BUSCAS)]
