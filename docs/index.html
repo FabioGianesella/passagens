@@ -205,6 +205,9 @@ dialog.cfg::backdrop{background:rgba(10,15,25,.45);-webkit-backdrop-filter:blur(
 .dval small{display:block;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0;margin-top:2px}
 .dpick{position:relative}
 .dact .pill[disabled]{opacity:.4;cursor:not-allowed}
+.a-wait{grid-column:1/-1;grid-row:2}
+.spin{display:block;width:26px;height:26px;margin:0 auto 14px;border-radius:50%;border:3px solid var(--chip);border-top-color:var(--ink);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 .dchoose{margin-top:0!important;border:0;cursor:pointer;font:inherit;font-weight:500;display:inline-flex;align-items:center;gap:10px}
 .cal{position:absolute;z-index:30;top:calc(100% + 10px);left:0;width:min(360px,calc(100vw - 56px));background:var(--solid);color:var(--text);border-radius:28px;padding:18px;
   box-shadow:0 30px 80px rgba(20,30,50,.28),0 0 0 1px var(--line);--band:color-mix(in srgb,var(--blue) 20%,transparent)}
@@ -353,12 +356,76 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
   };
   var escalas = function (n) { return n === 0 ? "Direto" : n + (n === 1 ? " escala" : " escalas"); };
 
-  var state = { range: "30", direct: "all", data: null };
+  var state = { range: "30", direct: "all", all: null, win: null, data: null, waiting: false, waitTs: 0, polling: false };
+  var sameWin = function (a, b) { return !!a && !!b && JSON.stringify(a.idas) === JSON.stringify(b.idas) && JSON.stringify(a.voltas) === JSON.stringify(b.voltas); };
+  var pendGet = function () { try { return JSON.parse(localStorage.getItem("pend") || "null"); } catch (e) { return null; } };
+  var pendSet = function (v) { try { if (v) localStorage.setItem("pend", JSON.stringify(v)); else localStorage.removeItem("pend"); } catch (e) {} };
+  var validWin = function (c) { return !!(c && c.idas && c.voltas && c.idas.length && c.voltas.length); };
+
+  // dados completos (todo o historico) + janela escolhida => visao exibida
+  function derive() {
+    var all = state.all;
+    if (!all) { state.data = null; return; }
+    var win = state.win || all.janela;
+    var rows = (all.linhas || []).filter(function (r) { return win.idas.indexOf(r.ida) >= 0 && win.voltas.indexOf(r.volta) >= 0; });
+    state.data = Object.assign({}, all, { janela: { idas: win.idas, voltas: win.voltas, min_noites: (all.janela && all.janela.min_noites) || 0 }, linhas: rows });
+  }
+  function isFresh(d) {
+    return !!(d && d.janela && sameWin(d.janela, state.win) && (!state.waitTs || Date.parse(d.atualizado) >= state.waitTs - 120000));
+  }
+  function applyAll(d) {
+    state.all = d;
+    if (state.waiting && isFresh(d)) { state.waiting = false; state.waitTs = 0; pendSet(null); }
+    derive(); render();
+  }
+  function setWindow(win, ts) {
+    state.win = { idas: win.idas.slice(), voltas: win.voltas.slice() };
+    state.waiting = true; state.waitTs = ts || 0;
+    derive(); render(); startPoll();
+  }
+  function startPoll() {
+    if (state.polling) return;
+    state.polling = true;
+    var t0 = Date.now();
+    (function tick() {
+      if (!state.waiting) { state.polling = false; return; }
+      fetch("https://raw.githubusercontent.com/FabioGianesella/passagens/main/docs/data.json?t=" + Date.now(), { cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .catch(function () { return fetch("data.json?t=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }); })
+        .then(function (d) {
+          if (isFresh(d)) { state.polling = false; applyAll(d); }
+          else if (Date.now() - t0 > 15 * 60e3) { state.polling = false; var m = $("#dMsg"); if (m) { m.textContent = "A atualização está demorando. Recarregue a página em alguns minutos."; m.className = "msg err"; } }
+          else setTimeout(tick, 5000);
+        })
+        .catch(function () { setTimeout(tick, 5000); });
+    })();
+  }
+  function adoptRemote(pd) {
+    fetch("https://raw.githubusercontent.com/FabioGianesella/passagens/main/config.json?t=" + Date.now(), { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (c) {
+        if (!validWin(c)) return;
+        var cfg = { idas: c.idas.slice().sort(), voltas: c.voltas.slice().sort() };
+        if (sameWin(cfg, state.win)) return;
+        if (pd && !sameWin(cfg, pd)) return;                       // fixacao local mais recente ainda nao chegou ao GitHub
+        if (window.__dirty && window.__dirty()) return;            // nao interrompe uma escolha em andamento
+        setWindow(cfg, 0);
+      })
+      .catch(function () {});
+  }
 
   fetch("data.json?" + Date.now(), { cache: "no-store" })
     .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-    .then(function (d) { state.data = d; init(); })
-    .catch(function () { state.data = null; init(); });
+    .then(function (d) {
+      state.all = d; state.win = d.janela;
+      var pd = pendGet();
+      if (pd && (sameWin(pd, d.janela) || Date.now() - pd.ts > 30 * 60e3)) { pendSet(null); pd = null; }
+      if (pd) { state.win = { idas: pd.idas, voltas: pd.voltas }; state.waiting = true; state.waitTs = pd.ts; }
+      derive(); init();
+      if (state.waiting) startPoll();
+      adoptRemote(pd);
+    })
+    .catch(function () { state.all = null; state.data = null; init(); });
 
   function setTitulo() {
     var d = state.data;
@@ -404,7 +471,15 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     setTitulo();
     var d = state.data, app = $("#app");
     if (!d || !d.linhas || !d.linhas.length) {
-      app.innerHTML = '<div class="card empty">Ainda não há consultas para mostrar.<br>Assim que a próxima busca automática rodar, os preços aparecem aqui.</div>';
+      if (d && d.janela) {
+        var a0 = d.janela.idas[0], b0 = d.janela.voltas[d.janela.voltas.length - 1];
+        app.innerHTML = '<div class="board">' + datasHtml() + (state.waiting
+          ? '<section class="card a-wait"><div class="empty"><span class="spin"></span>Buscando os preços de ' + esc(dm(a0)) + " a " + esc(dm(b0)) + '…<br>Os resultados aparecem aqui assim que a consulta terminar (cerca de 1 minuto).</div></section>'
+          : '<section class="card a-wait"><div class="empty">Ainda não há preços para estas datas.<br>A próxima busca automática vai trazê-los.</div></section>') + "</div>";
+        initDatas();
+      } else {
+        app.innerHTML = '<div class="card empty">Ainda não há consultas para mostrar.<br>Assim que a próxima busca automática rodar, os preços aparecem aqui.</div>';
+      }
       $("#foot").textContent = "";
       return;
     }
@@ -590,13 +665,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     var hoje = new Date(Date.now() - 3 * 36e5).toISOString().slice(0, 10);
     var cur = { idas: j.idas.slice(), voltas: j.voltas.slice() }, draft = { idas: j.idas.slice(), voltas: j.voltas.slice() };
     var pick = { ida: null, volta: null }, view = hoje.slice(0, 7);
-    var pendGet = function () { try { return JSON.parse(localStorage.getItem("pend") || "null"); } catch (e) { return null; } };
-    var pendSet = function (v) { try { if (v) localStorage.setItem("pend", JSON.stringify(v)); else localStorage.removeItem("pend"); } catch (e) {} };
-    var sameWin = function (a, b) { return JSON.stringify(a.idas) === JSON.stringify(b.idas) && JSON.stringify(a.voltas) === JSON.stringify(b.voltas); };
-    var pd = pendGet();
-    if (pd && (sameWin(pd, j) || Date.now() - pd.ts > 30 * 60e3)) { pendSet(null); pd = null; }
-    var waiting = !!pd;
-    if (pd) { cur = { idas: pd.idas.slice(), voltas: pd.voltas.slice() }; draft = { idas: pd.idas.slice(), voltas: pd.voltas.slice() }; }
+    var waiting = state.waiting;
     var cfgJson = function () { return JSON.stringify({ idas: draft.idas, voltas: draft.voltas }, null, 2) + "\n"; };
     var same = function () { return JSON.stringify(draft.idas) === JSON.stringify(cur.idas) && JSON.stringify(draft.voltas) === JSON.stringify(cur.voltas); };
     var pares = function () { var n = 0; draft.idas.forEach(function (i) { draft.voltas.forEach(function (v) { if (noites(i, v) >= min) n++; }); }); return n; };
@@ -615,7 +684,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
       $("#dSave").disabled = !(n > 0);
       if (!(n > 0)) say("Escolha uma ida e uma volta com " + min + " noites ou mais.", "err");
       else if (pend) say("Alterações ainda não fixadas.");
-      else if (waiting) say("Datas fixadas. A busca do novo período está rodando; os preços aparecem aqui sozinhos em poucos minutos.", "ok");
+      else if (waiting) say("Datas fixadas. Buscando os preços do novo período; o resultado aparece aqui em cerca de 1 minuto.", "ok");
       else say("");
       connPaint();
     }
@@ -681,21 +750,6 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     window.__connPaint = connPaint;
     window.__cfgJson = cfgJson;
 
-    function startPoll() {
-      var t0 = Date.now();
-      (function tick() {
-        if (!waiting) return;
-        fetch("data.json?t=" + Date.now(), { cache: "no-store" })
-          .then(function (r) { return r.json(); })
-          .then(function (d) {
-            if (d && d.janela && sameWin(d.janela, cur)) { waiting = false; pendSet(null); state.data = d; render(); }
-            else if (Date.now() - t0 > 15 * 60e3) say("A atualização está demorando. Recarregue a página em alguns minutos.", "err");
-            else setTimeout(tick, 15000);
-          })
-          .catch(function () { setTimeout(tick, 15000); });
-      })();
-    }
-
     // salvar no repositorio
     $("#dSave").addEventListener("click", function () {
       if (same()) { closeCal(); say("Estas datas já estão fixadas. Escolha outras datas para alterar.", ""); return; }
@@ -714,8 +768,9 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
         .then(function (r) {
           if (!r.ok) throw r.status;
           cur = { idas: draft.idas.slice(), voltas: draft.voltas.slice() };
-          pendSet({ idas: cur.idas, voltas: cur.voltas, ts: Date.now() }); waiting = true;
-          paint(); startPoll();
+          var ts = Date.now();
+          pendSet({ idas: cur.idas, voltas: cur.voltas, ts: ts });
+          setWindow(cur, ts);
         })
         .catch(function (c) {
           b.disabled = false;
@@ -723,22 +778,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
         });
     });
     paint();
-    if (waiting) startPoll();
     window.__dirty = function () { return !same() || !cal.hidden; };
-
-    // adota a busca fixada em qualquer aparelho: le o config.json do repositorio
-    fetch("https://raw.githubusercontent.com/" + REPO + "/main/" + CFG + "?t=" + Date.now(), { cache: "no-store" })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (c) {
-        if (!c || !c.idas || !c.voltas || !c.idas.length || !c.voltas.length) return;
-        var cfg = { idas: c.idas.slice().sort(), voltas: c.voltas.slice().sort() };
-        if (pd && !sameWin(cfg, pd)) return;   // fixacao local mais recente ainda nao chegou ao GitHub
-        if (sameWin(cfg, j)) { if (waiting) { waiting = false; pendSet(null); cur = cfg; draft = { idas: cfg.idas.slice(), voltas: cfg.voltas.slice() }; paint(); } return; }
-        if (same() && cal.hidden && !sameWin(cfg, cur)) {
-          cur = cfg; draft = { idas: cfg.idas.slice(), voltas: cfg.voltas.slice() }; waiting = true; paint(); startPoll();
-        } else if (same() && !waiting) { waiting = true; paint(); startPoll(); }
-      })
-      .catch(function () {});
   }
 
   function drawDonut(by, avg) {
