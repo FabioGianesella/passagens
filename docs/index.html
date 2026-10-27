@@ -570,7 +570,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
       '<div class="dact">' +
       '<div class="dpick"><button type="button" class="btn dchoose" id="dChoose" aria-haspopup="dialog" aria-expanded="false">' + CAL_ICO + '<span id="dChooseT">Escolher datas</span></button>' +
         '<div class="cal" id="cal" role="dialog" aria-label="Escolher datas de ida e volta" hidden></div></div>' +
-        '<button type="button" class="btn" id="dSave">Fixar buscas nestas datas</button><button type="button" class="pill" id="dReset">Descartar alterações</button><span class="msg" id="dMsg"></span></div>' +
+        '<button type="button" class="btn" id="dSave">Fixar buscas nestas datas</button><span class="msg" id="dMsg"></span></div>' +
       '<div class="dconn" id="dConn"></div></section>';
   }
 
@@ -651,9 +651,6 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     });
     document.addEventListener("click", function (e) { if (!cal.hidden && !e.target.closest(".dpick")) closeCal(); });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !cal.hidden) { closeCal(); btn.focus(); } });
-    $("#dReset").addEventListener("click", function () {
-      if (same()) { closeCal(); say("Não há alterações para descartar.", ""); return; }
-      draft = { idas: cur.idas.slice(), voltas: cur.voltas.slice() }; pick = { ida: null, volta: null }; closeCal(); paint(); say("Alterações descartadas. Voltou para as datas fixadas.", "ok"); });
 
     function connPaint() {
       $("#dConn").innerHTML = tokGet()
