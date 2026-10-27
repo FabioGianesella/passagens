@@ -53,7 +53,7 @@ button{font:inherit;color:inherit}
 .pills.sm .pill{padding:5px 12px;font-size:12px}
 
 /* corpo */
-.body{display:grid;grid-template-columns:56px 1fr;gap:26px;margin-top:26px}
+.body{display:block;margin-top:26px}
 .rail{display:flex;flex-direction:column;gap:12px;position:sticky;top:24px;align-self:start}
 .ib{
   width:48px;height:48px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);color:var(--muted);
@@ -72,8 +72,7 @@ h1{font-size:clamp(34px,5vw,58px);line-height:1.04;font-weight:500;letter-spacin
 .route svg{width:20px;height:20px;color:var(--muted)}
 
 /* tabuleiro */
-.board{display:grid;gap:18px;grid-template-columns:minmax(270px,.95fr) minmax(250px,.9fr) 1.6fr;
-  grid-template-areas:"datas datas datas" "opts donut chart" "opts hero hero" "combos combos combos"}
+.board{display:grid;gap:18px;grid-template-columns:1fr;grid-template-areas:"hero" "chart" "datas" "combos"}
 .a-opts{grid-area:opts}.a-donut{grid-area:donut}.a-chart{grid-area:chart}.a-hero{grid-area:hero}.a-combos{grid-area:combos}.a-datas{grid-area:datas}
 .card{background:var(--card);border:1px solid var(--cardb);border-radius:34px;padding:24px;position:relative;scroll-margin-top:20px;min-width:0}
 .ch{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
@@ -205,7 +204,7 @@ dialog.cfg::backdrop{background:rgba(10,15,25,.45);-webkit-backdrop-filter:blur(
 .dval small{display:block;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0;margin-top:2px}
 .dpick{position:relative}
 .dact .pill[disabled]{opacity:.4;cursor:not-allowed}
-.a-wait{grid-column:1/-1;grid-row:2}
+.a-wait{grid-area:auto}
 .spin{display:block;width:26px;height:26px;margin:0 auto 14px;border-radius:50%;border:3px solid var(--chip);border-top-color:var(--ink);animation:spin .9s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .dchoose{margin-top:0!important;border:0;cursor:pointer;font:inherit;font-weight:500;display:inline-flex;align-items:center;gap:10px}
@@ -234,7 +233,6 @@ dialog.cfg::backdrop{background:rgba(10,15,25,.45);-webkit-backdrop-filter:blur(
 footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-height:1.6}
 
 @media (max-width:1100px){
-  .board{grid-template-columns:1fr 1fr;grid-template-areas:"datas datas" "hero hero" "chart chart" "donut opts" "combos combos"}
   .top{grid-template-columns:1fr auto}
   .pills.main{grid-column:1/-1;grid-row:2;justify-content:flex-start}
 }
@@ -248,7 +246,6 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
   .app{border-radius:30px;padding:20px 16px 26px}
   .body{grid-template-columns:1fr;gap:0}
   .rail{display:none}
-  .board{grid-template-columns:1fr;grid-template-areas:"datas" "hero" "donut" "chart" "opts" "combos"}
   .hero{grid-template-columns:1fr}
   .card{border-radius:28px;padding:20px}
   .status #upd{display:none}
@@ -257,17 +254,19 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
   .brand{font-size:22px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+details.a-combos>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+details.a-combos>summary::-webkit-details-marker{display:none}
+details.a-combos>summary h2{margin:0}
+.sumh{font-size:13px;color:var(--muted,#8a8f98)}
+details.a-combos>summary::after{content:"▾";margin-left:auto;transition:transform .2s}
+details.a-combos[open]>summary::after{transform:rotate(180deg)}
+details.a-combos[open]>summary{margin-bottom:14px}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="top">
     <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l18-8-5 17-4-6.5L8 17l1-5z" fill="currentColor" stroke="none"/></svg></span>Passagens</div>
-    <div class="pills main" id="range" role="group" aria-label="Período do gráfico">
-      <button class="pill" data-v="7" aria-pressed="false">7 dias</button>
-      <button class="pill" data-v="30" aria-pressed="true">30 dias</button>
-      <button class="pill" data-v="all" aria-pressed="false">Tudo</button>
-    </div>
     <div class="right">
       <button type="button" class="ib tbtn" id="openCfg" title="Configurações" aria-label="Configurações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
       <div class="status"><span class="dot" id="dot"></span><span id="upd">Carregando…</span></div>
@@ -280,14 +279,6 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
   </div>
 
   <div class="body">
-    <nav class="rail" aria-label="Seções">
-      <a class="ib on" href="#datas" title="Datas da busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg></a>
-<a class="ib" href="#resumo" title="Resumo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg></a>
-      <a class="ib" href="#evolucao" title="Evolução"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l5-6 4 3 7-9"/><path d="M4 21h16"/></svg></a>
-      <a class="ib" href="#visao" title="Visão geral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9h9"/><path d="M20.5 15A9 9 0 1 1 9 3.5"/></svg></a>
-      <a class="ib" href="#opcoes" title="Melhores opções"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg></a>
-            <a class="ib" href="#combos" title="Combinações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M10 10v9.5"/></svg></a>
-    </nav>
     <main>
       <header class="hd">
         <div>
@@ -447,17 +438,8 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     document.addEventListener("visibilitychange", function () {
       if (!document.hidden && Date.now() - loadedAt > 120000 && !(window.__dirty && window.__dirty())) location.reload();
     });
-    document.querySelectorAll("#range button").forEach(function (b) {
-      b.addEventListener("click", function () {
-        state.range = b.dataset.v;
-        document.querySelectorAll("#range button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
-        drawChart();
-      });
-    });
     render();
     window.addEventListener("resize", drawChart);
-    var lk = document.querySelectorAll(".rail a");
-    lk.forEach(function (a) { a.addEventListener("click", function () { lk.forEach(function (x) { x.classList.toggle("on", x === a); }); }); });
   }
 
   function nextRun() {
@@ -534,29 +516,18 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     html += '<div class="stat"><div class="label">Média dos últimos 30 dias</div><div class="mid">' + (r30.length ? brl(avg) : "—") + '</div><div class="sub">' + r30.length + " consultas em " + nDias + (nDias === 1 ? " dia" : " dias") + "</div></div>";
     html += "</div></div></section>";
 
-    html += '<section class="card a-donut fade" id="visao"><div class="ch"><h2>Visão geral</h2></div><div id="donut"></div></section>';
-
     html += '<section class="card a-chart fade" id="evolucao"><div class="ch"><h2>Evolução do preço (ida e volta)</h2>' +
       '<div class="lg"><span><i style="background:var(--blue)"></i>Menor</span><span><i style="background:var(--orange)"></i>Média do dia</span></div></div>' +
       '<div id="chart"></div></section>';
 
-    html += '<section class="card a-opts fade" id="opcoes"><div class="ch"><h2>Melhores opções</h2></div>' +
-      '<div class="pills sm" id="segDir"><button class="pill" data-v="all" aria-pressed="true">Todas</button><button class="pill" data-v="direct" aria-pressed="false">Diretos</button></div>' +
-      '<div class="list" id="list"></div></section>';
-
-    html += '<section class="card a-combos fade" id="combos"><div class="ch"><h2>Por combinação de ida e volta</h2></div><div id="matrix"></div>' +
-      '<p class="hint">Preço total de ida e volta para cada par de datas. Linhas são os dias de ida; colunas, os dias de volta. Clique no círculo de uma combinação para ver os detalhes dela no resumo acima.</p></section>';
+    html += '<details class="card a-combos fade" id="combos"><summary><h2>Ver outras datas</h2><span class="sumh">Por combinação de ida e volta</span></summary><div id="matrix"></div>' +
+      '<p class="hint">Preço total de ida e volta para cada par de datas. Linhas são os dias de ida; colunas, os dias de volta. Clique no círculo de uma combinação para ver os detalhes dela no resumo acima.</p></details>';
     if (d.janela) html += datasHtml();
     html += "</div>";
 
     app.innerHTML = html;
 
     // interacoes
-    $("#segDir").addEventListener("click", function (e) {
-      var b = e.target.closest("button"); if (!b) return;
-      state.direct = b.dataset.v; setPressed("#segDir", b); drawList(latest);
-    });
-
     var selKey = best.ida + "|" + best.volta;
     function select(k) {
       selKey = k;
@@ -577,9 +548,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
       var c = e.target.closest(".cell[data-k]"); if (c) { e.preventDefault(); select(c.dataset.k); }
     });
     select(selKey);
-    drawDonut(by, avg);
     if (d.janela) initDatas();
-    drawList(latest);
     drawChart();
 
     $("#foot").innerHTML = "Busca automática às 8h e 20h (próxima " + nextRun() + ").<br>Preços de ida e volta em reais · Fonte: Google Flights via SerpAPI.";
