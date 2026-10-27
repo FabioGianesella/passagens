@@ -14,13 +14,13 @@ def main():
             continue
         linhas.append({
             "consulta": l["consulta"], "ida": l["ida"], "volta": l["volta"],
-            "preco": int(l["preco"]), "aeroporto": l.get("aeroporto", ""), "cia": l.get("cia", ""),
+            "preco": int(l["preco"]), "origem": l.get("origem", ""), "cia": l.get("cia", ""),
             "escalas": int(l.get("escalas") or 0), "link": l.get("link", ""),
         })
     linhas.sort(key=lambda x: (x["consulta"], x["ida"], x["volta"]))
     dados = {
         "atualizado": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "rota": {"origem": b.ORIGEM, "destinos": b.DESTINOS},
+        "rota": {"origens": b.ORIGENS, "destino": b.DESTINO},
         "janela": {"idas": [d.isoformat() for d in b.IDAS], "voltas": [d.isoformat() for d in b.VOLTAS],
                    "min_noites": b.MIN_NOITES},
         "teto": b.TETO_ALERTA,

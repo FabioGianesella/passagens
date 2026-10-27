@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Alerta de passagens AJU -> SAO (CGH/GRU/VCP) -> AJU (ida e volta), aviso no celular via ntfy.
+Alerta de passagens SAO (CGH/GRU/VCP) -> AJU -> SAO (ida e volta), aviso no celular via ntfy.
 Foco: semana de 23/11/2026 a 28/11/2026. Fonte: Google Flights via SerpAPI.
 
 Variaveis de ambiente: SERPAPI_KEY e NTFY_TOPIC.
@@ -16,8 +16,8 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 # ====================== CONFIGURACAO ======================
-ORIGEM = "AJU"                   # Aracaju: sai daqui e volta pra ca
-DESTINOS = "CGH,GRU,VCP"         # SAO = Congonhas, Guarulhos e Viracopos
+ORIGENS = "CGH,GRU,VCP"          # SAO = Congonhas, Guarulhos e Viracopos: sai daqui e volta pra ca
+DESTINO = "AJU"
 IDAS = [date(2026, 11, 23), date(2026, 11, 24), date(2026, 11, 25)]    # dias de ida possiveis
 VOLTAS = [date(2026, 11, 26), date(2026, 11, 27), date(2026, 11, 28)]  # dias de volta possiveis
 MIN_NOITES = 2                   # minimo de noites entre ida e volta
@@ -31,7 +31,7 @@ GRAFICO = Path(__file__).with_name("grafico.png")
 
 KEY = os.getenv("SERPAPI_KEY")
 TOPIC = (os.getenv("NTFY_TOPIC") or "").strip()
-CAMPOS = ["consulta", "ida", "volta", "preco", "aeroporto", "cia", "escalas", "link"]
+CAMPOS = ["consulta", "ida", "volta", "preco", "origem", "cia", "escalas", "link"]
 NL = chr(10)
 
 
@@ -45,7 +45,7 @@ def ascii_safe(s):
 
 def fmt(r):
     esc = "direto" if r["escalas"] == 0 else f"{r['escalas']} esc."
-    return f"R$ {r['preco']:.0f} | {dm(r['ida'])} a {dm(r['volta'])} | {r['aeroporto']} | {r['cia']} | {esc}"
+    return f"R$ {r['preco']:.0f} | {dm(r['ida'])} a {dm(r['volta'])} | {r['origem']} | {r['cia']} | {esc}"
 
 
 # ---------------------------- avisos ----------------------------
@@ -107,13 +107,13 @@ def combinacoes(n):
 def resumo(o, ida, volta, link):
     t = o.get("flights", [])
     return {"ida": ida.isoformat(), "volta": volta.isoformat(), "preco": o["price"],
-            "aeroporto": t[-1]["arrival_airport"]["id"] if t else "",
+            "origem": t[0]["departure_airport"]["id"] if t else "",
             "cia": ", ".join(dict.fromkeys(x.get("airline", "") for x in t)),
             "escalas": max(len(t) - 1, 0), "link": link}
 
 
 def buscar(ida, volta):
-    params = {"engine": "google_flights", "departure_id": ORIGEM, "arrival_id": DESTINOS,
+    params = {"engine": "google_flights", "departure_id": ORIGENS, "arrival_id": DESTINO,
               "outbound_date": ida.isoformat(), "return_date": volta.isoformat(), "type": 1,
               "currency": "BRL", "hl": "pt", "gl": "br", "api_key": KEY}
     if MAX_ESCALAS is not None:
@@ -139,7 +139,7 @@ def ler_historico():
     with HISTORICO.open(encoding="utf-8") as f:
         for l in csv.DictReader(f):
             try:
-                chave = (l["consulta"], l["ida"], l["volta"], int(float(l["preco"])), l["aeroporto"], l["cia"])
+                chave = (l["consulta"], l["ida"], l["volta"], int(float(l["preco"])), l["origem"], l["cia"])
                 if chave in vistos:
                     continue  # ignora linhas repetidas (mesma busca no mesmo dia)
                 vistos.add(chave)
@@ -158,10 +158,10 @@ def na_janela(l):
 
 def salvar(rs, existentes):
     hoje = date.today().isoformat()
-    chaves = {(l.get("consulta"), l.get("ida"), l.get("volta"), str(int(l["preco"])), l.get("aeroporto"), l.get("cia"))
+    chaves = {(l.get("consulta"), l.get("ida"), l.get("volta"), str(int(l["preco"])), l.get("origem"), l.get("cia"))
               for l in existentes}
     novos = [r for r in rs
-             if (hoje, r["ida"], r["volta"], str(int(r["preco"])), r["aeroporto"], r["cia"]) not in chaves]
+             if (hoje, r["ida"], r["volta"], str(int(r["preco"])), r["origem"], r["cia"]) not in chaves]
     if not novos:
         return
     novo_arquivo = not HISTORICO.exists() or HISTORICO.stat().st_size == 0
@@ -187,7 +187,7 @@ def grafico(jan):
             return None
         fig, ax = plt.subplots(figsize=(8, 4))
         ax.plot([dm(d) for d in dias], [por_dia[d] for d in dias], marker="o")
-        ax.set_title("Menor preco por dia - AJU > SAO (23 a 28/11)")
+        ax.set_title("Menor preco por dia - SAO > AJU (23 a 28/11)")
         ax.set_ylabel("R$")
         ax.grid(alpha=0.3)
         fig.tight_layout()
@@ -209,31 +209,31 @@ def resumo_semanal(hoje):
     melhor = min(sem, key=lambda l: l["preco"])
     m_sem = statistics.mean(l["preco"] for l in sem)
     linhas = [f"Menor da semana: R$ {melhor['preco']:.0f} | {dm(melhor['ida'])} a {dm(melhor['volta'])}"
-              f" | {melhor['aeroporto']} | {melhor['cia']}",
+              f" | {melhor['origem']} | {melhor['cia']}",
               f"Media da semana: R$ {m_sem:.0f}"]
     if ant:
         m_ant = statistics.mean(l["preco"] for l in ant)
         linhas.append(f"Vs semana anterior: {(m_sem / m_ant - 1) * 100:+.0f}%")
     linhas.append(f"Recorde geral: R$ {min(l['preco'] for l in jan):.0f}")
-    avisar("Resumo semanal AJU-SAO", NL.join(linhas), link=melhor.get("link", ""), anexo=grafico(jan))
+    avisar("Resumo semanal SAO-AJU", NL.join(linhas), link=melhor.get("link", ""), anexo=grafico(jan))
 
 
 # ---------------------------- principal ----------------------------
 def main():
     if not KEY:
-        avisar("Falha no alerta AJU-SAO", "SERPAPI_KEY nao definida.", prioridade="high")
+        avisar("Falha no alerta SAO-AJU", "SERPAPI_KEY nao definida.", prioridade="high")
         sys.exit("Defina SERPAPI_KEY.")
     hoje = date.today()
     left = cota_restante()
     if left is not None and left <= 0:
-        avisar("Falha no alerta AJU-SAO", "A cota de buscas do SerpAPI acabou neste mes.", prioridade="high")
+        avisar("Falha no alerta SAO-AJU", "A cota de buscas do SerpAPI acabou neste mes.", prioridade="high")
         sys.exit(1)
     n = MAX_BUSCAS if left is None else min(MAX_BUSCAS, left)
     combos = combinacoes(n)
     if not combos:
         print("Sem datas futuras na janela: busca encerrada.")
         if hoje <= IDAS[-1] + timedelta(days=1):
-            avisar("Alerta AJU-SAO encerrado", "A janela de datas terminou. Configure novas datas para continuar.")
+            avisar("Alerta SAO-AJU encerrado", "A janela de datas terminou. Configure novas datas para continuar.")
         return
 
     rs, erros = [], []
@@ -252,7 +252,7 @@ def main():
                 rs.append(r)
     if not rs:
         motivo = ", ".join(sorted(set(erros))) if erros else "sem ofertas para as datas"
-        avisar("Falha no alerta AJU-SAO", f"A busca de hoje nao trouxe resultados ({motivo}).", prioridade="high")
+        avisar("Falha no alerta SAO-AJU", f"A busca de hoje nao trouxe resultados ({motivo}).", prioridade="high")
         sys.exit(1)
 
     hist = ler_historico()
@@ -269,13 +269,13 @@ def main():
     melhor = rs[0]
     p = melhor["preco"]
     if recorde is None:
-        titulo, prio = "Monitoramento AJU-SAO iniciado", "default"
+        titulo, prio = "Monitoramento SAO-AJU iniciado", "default"
     elif p < recorde:
-        titulo, prio = "Menor preco ja visto! AJU-SAO", "high"
+        titulo, prio = "Menor preco ja visto! SAO-AJU", "high"
     elif p <= TETO_ALERTA:
-        titulo, prio = f"Abaixo de R$ {TETO_ALERTA}! AJU-SAO", "high"
+        titulo, prio = f"Abaixo de R$ {TETO_ALERTA}! SAO-AJU", "high"
     elif media and p <= media * (1 - QUEDA_PERCENTUAL / 100):
-        titulo, prio = "Queda de preco AJU-SAO", "default"
+        titulo, prio = "Queda de preco SAO-AJU", "default"
     else:
         titulo = None
 
@@ -308,5 +308,5 @@ if __name__ == "__main__":
     except SystemExit:
         raise
     except Exception as e:
-        avisar("Erro no alerta AJU-SAO", f"Falha inesperada: {type(e).__name__}", prioridade="high")
+        avisar("Erro no alerta SAO-AJU", f"Falha inesperada: {type(e).__name__}", prioridade="high")
         raise
