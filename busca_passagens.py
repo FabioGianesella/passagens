@@ -18,7 +18,7 @@ JANELA_INICIO_DIAS = 14     # primeira ida: daqui a X dias
 JANELA_FIM_DIAS = 90        # última ida: daqui a X dias
 PASSO_DIAS = 7              # uma data de ida a cada X dias
 ESTADIAS = [3, 5, 7]        # noites entre ida e volta
-MAX_BUSCAS = 3              # buscas por dia (por execucao, 2 execucoes/dia: 3 x 2 x 30 = 180 de 250/mes)
+MAX_BUSCAS = 4              # buscas por dia (por execucao, 2 execucoes/dia: 4 x 2 x 30 = 240 de 250/mes)
 MAX_ESCALAS = None          # None = qualquer; 0 = só direto; 1 = até 1 parada
 HISTORICO = Path(__file__).with_name("historico.csv")
 # ===========================================================
