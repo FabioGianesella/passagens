@@ -88,7 +88,8 @@ def avisar(titulo, msg, link="", prioridade="default"):
     h = {"Title": titulo, "Priority": prioridade, "Tags": "airplane"}
     if link:
         h["Click"] = link
-    requests.post(f"https://ntfy.sh/{TOPIC}", data=msg.encode("utf-8"), headers=h, timeout=30)
+    resp = requests.post(f"https://ntfy.sh/{TOPIC.strip()}", data=msg.encode("utf-8"), headers=h, timeout=30)
+    print("ntfy:", resp.status_code, resp.text[:200])
 
 
 def main():
