@@ -72,8 +72,8 @@ h1{font-size:clamp(34px,5vw,58px);line-height:1.04;font-weight:500;letter-spacin
 
 /* tabuleiro */
 .board{display:grid;gap:18px;grid-template-columns:minmax(270px,.95fr) minmax(250px,.9fr) 1.6fr;
-  grid-template-areas:"opts donut chart" "opts hero hero" "combos combos combos"}
-.a-opts{grid-area:opts}.a-donut{grid-area:donut}.a-chart{grid-area:chart}.a-hero{grid-area:hero}.a-combos{grid-area:combos}
+  grid-template-areas:"opts donut chart" "opts hero hero" "combos combos combos" "datas datas datas"}
+.a-opts{grid-area:opts}.a-donut{grid-area:donut}.a-chart{grid-area:chart}.a-hero{grid-area:hero}.a-combos{grid-area:combos}.a-datas{grid-area:datas}
 .card{background:var(--card);border:1px solid var(--cardb);border-radius:34px;padding:24px;position:relative;scroll-margin-top:20px;min-width:0}
 .ch{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
 .ch h2{font-size:20px;font-weight:500;letter-spacing:-.03em}
@@ -152,19 +152,40 @@ a.opt:hover{transform:translateY(-2px)}
 .back:hover{background:var(--chip)}
 .cell.na{background:transparent;border:1px dashed var(--line);color:var(--muted);font-weight:400;font-size:14px}
 .hint{color:var(--muted);font-size:13px;margin-top:14px}
+/* datas */
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.dcol{border-radius:26px;padding:18px 20px}
+.dcol:nth-child(1){background:var(--p1)}.dcol:nth-child(2){background:var(--p2)}
+.dchips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;min-height:34px;align-items:center}
+.dchip{display:inline-flex;align-items:center;gap:6px;padding:6px 8px 6px 14px;border-radius:999px;background:var(--solid);font-size:14px;font-weight:500}
+.dchip button{border:0;background:var(--chip);width:22px;height:22px;border-radius:50%;cursor:pointer;line-height:1;font-size:15px;color:var(--muted)}
+.dchip button:hover{color:var(--text)}
+.dadd{display:flex;gap:8px;flex-wrap:wrap}
+input[type=date],input[type=password]{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--solid);color:var(--text);border-radius:999px;padding:8px 14px;min-width:0}
+.dact{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px}
+.dact .btn{margin-top:0;border:0;cursor:pointer;font:inherit;font-weight:500}
+.dact .btn[disabled]{opacity:.4;cursor:not-allowed}
+.msg{font-size:13px;color:var(--muted)} .msg.ok{color:var(--good)} .msg.err{color:var(--warn)}
+details.gh{margin-top:16px;border-top:1px solid var(--line);padding-top:14px;font-size:14px}
+details.gh summary{cursor:pointer;color:var(--muted);font-size:13px;font-weight:500}
+details.gh p{color:var(--muted);margin:10px 0;font-size:13px;line-height:1.5}
+details.gh a{text-decoration:underline}
+.ghrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.ghrow input{flex:1;min-width:200px}
 footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-height:1.6}
 
 @media (max-width:1100px){
-  .board{grid-template-columns:1fr 1fr;grid-template-areas:"hero hero" "chart chart" "donut opts" "combos combos"}
+  .board{grid-template-columns:1fr 1fr;grid-template-areas:"hero hero" "chart chart" "donut opts" "combos combos" "datas datas"}
   .top{grid-template-columns:1fr auto}
   .pills.main{grid-column:1/-1;grid-row:2;justify-content:flex-start}
 }
 @media (max-width:760px){
+  .dgrid{grid-template-columns:1fr}
   body{padding:10px}
   .app{border-radius:30px;padding:20px 16px 26px}
   .body{grid-template-columns:1fr;gap:0}
   .rail{display:none}
-  .board{grid-template-columns:1fr;grid-template-areas:"hero" "donut" "chart" "opts" "combos"}
+  .board{grid-template-columns:1fr;grid-template-areas:"hero" "donut" "chart" "opts" "combos" "datas"}
   .hero{grid-template-columns:1fr}
   .card{border-radius:28px;padding:20px}
   .status #upd{display:none}
@@ -200,6 +221,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
       <a class="ib" href="#evolucao" title="Evolução"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l5-6 4 3 7-9"/><path d="M4 21h16"/></svg></a>
       <a class="ib" href="#visao" title="Visão geral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9h9"/><path d="M20.5 15A9 9 0 1 1 9 3.5"/></svg></a>
       <a class="ib" href="#opcoes" title="Melhores opções"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg></a>
+      <a class="ib" href="#datas" title="Datas da busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg></a>
       <a class="ib" href="#combos" title="Combinações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M10 10v9.5"/></svg></a>
     </nav>
     <main>
@@ -260,8 +282,9 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     if (d && d.janela) {
       var i = d.janela.idas, v = d.janela.voltas;
       var a = i[0], b = v[v.length - 1];
-      var m = MES[parseInt(b.slice(5, 7), 10) - 1];
-      $("#titulo").textContent = "Semana de " + parseInt(a.slice(8), 10) + " a " + parseInt(b.slice(8), 10) + " de " + m;
+      var da = parseInt(a.slice(8), 10), db = parseInt(b.slice(8), 10), ma = MES[parseInt(a.slice(5, 7), 10) - 1], mb = MES[parseInt(b.slice(5, 7), 10) - 1];
+      var span = Math.round((new Date(b) - new Date(a)) / 864e5);
+      $("#titulo").textContent = (span <= 7 ? "Semana de " : "Período de ") + (a.slice(0, 7) === b.slice(0, 7) ? da + " a " + db + " de " + mb : da + " de " + ma + " a " + db + " de " + mb);
     }
     document.querySelectorAll("#range button").forEach(function (b) {
       b.addEventListener("click", function () {
@@ -353,6 +376,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
 
     html += '<section class="card a-combos fade" id="combos"><div class="ch"><h2>Por combinação de ida e volta</h2></div><div id="matrix"></div>' +
       '<p class="hint">Preço total de ida e volta para cada par de datas. Linhas são os dias de ida; colunas, os dias de volta. Clique no círculo de uma combinação para ver os detalhes dela no resumo acima.</p></section>';
+    if (d.janela) html += datasHtml();
     html += "</div>";
 
     app.innerHTML = html;
@@ -384,6 +408,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     });
     select(selKey);
     drawDonut(by, avg);
+    if (d.janela) initDatas();
     drawList(latest);
     drawChart();
 
@@ -413,6 +438,103 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
       });
     });
     $("#matrix").innerHTML = h + "</div>";
+  }
+
+  var REPO = "FabioGianesella/passagens", CFG = "config.json", MAXC = 12;
+  var tokGet = function () { try { return localStorage.getItem("gh_tok") || ""; } catch (e) { return ""; } };
+  var tokSet = function (v) { try { if (v) localStorage.setItem("gh_tok", v); else localStorage.removeItem("gh_tok"); } catch (e) {} };
+
+  function datasHtml() {
+    var hoje = new Date(Date.now() - 3 * 36e5).toISOString().slice(0, 10);
+    return '<section class="card a-datas fade" id="datas"><div class="ch"><h2>Datas da busca</h2><span class="sub" id="dInfo"></span></div>' +
+      '<div class="dgrid">' +
+      '<div class="dcol"><div class="label">Datas de ida · São Paulo → Aracaju</div><div class="dchips" id="dIda"></div>' +
+        '<div class="dadd"><input type="date" id="addIda" min="' + hoje + '" aria-label="Adicionar data de ida"><button type="button" class="pill" id="btnIda">Adicionar</button></div></div>' +
+      '<div class="dcol"><div class="label">Datas de volta · Aracaju → São Paulo</div><div class="dchips" id="dVolta"></div>' +
+        '<div class="dadd"><input type="date" id="addVolta" min="' + hoje + '" aria-label="Adicionar data de volta"><button type="button" class="pill" id="btnVolta">Adicionar</button></div></div>' +
+      '</div>' +
+      '<div class="dact"><button type="button" class="btn" id="dSave">Fixar buscas nestas datas</button><button type="button" class="pill" id="dReset">Descartar alterações</button><span class="msg" id="dMsg"></span></div>' +
+      '<details class="gh" id="gh"><summary>Conexão com o GitHub (necessária para salvar)</summary>' +
+        '<p>Para gravar as datas no repositório, este navegador precisa de um token do GitHub restrito a este repositório, com permissão de leitura e escrita em <b>Contents</b>. ' +
+        '<a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Criar token</a>. Ele fica guardado somente neste navegador.</p>' +
+        '<div class="ghrow"><input type="password" id="ghTok" autocomplete="off" placeholder="Cole o token aqui"><button type="button" class="pill" id="ghSave">Guardar token</button><button type="button" class="pill" id="ghDel">Remover</button></div>' +
+        '<p>Sem token? <a href="#" id="dCopy">Copie o JSON</a> e cole no arquivo <a href="https://github.com/' + REPO + '/edit/main/' + CFG + '" target="_blank" rel="noopener">config.json</a> no GitHub.</p>' +
+      '</details></section>';
+  }
+
+  function initDatas() {
+    var j = state.data.janela, min = j.min_noites || 0;
+    var cur = { idas: j.idas.slice(), voltas: j.voltas.slice() }, draft = { idas: j.idas.slice(), voltas: j.voltas.slice() };
+    var cfgJson = function () { return JSON.stringify({ idas: draft.idas, voltas: draft.voltas }, null, 2) + "\n"; };
+    var same = function () { return JSON.stringify(draft.idas) === JSON.stringify(cur.idas) && JSON.stringify(draft.voltas) === JSON.stringify(cur.voltas); };
+    var pares = function () { var n = 0; draft.idas.forEach(function (i) { draft.voltas.forEach(function (v) { if (noites(i, v) >= min) n++; }); }); return n; };
+    var say = function (t, cls) { var m = $("#dMsg"); m.textContent = t || ""; m.className = "msg" + (cls ? " " + cls : ""); };
+
+    function chips(kind) {
+      return draft[kind].map(function (x) {
+        return '<span class="dchip">' + esc(dmy(x)) + '<button type="button" data-rm="' + kind + "|" + x + '" aria-label="Remover ' + esc(dm(x)) + '">×</button></span>';
+      }).join("") || '<span class="sub">Nenhuma data</span>';
+    }
+    function paint() {
+      $("#dIda").innerHTML = chips("idas"); $("#dVolta").innerHTML = chips("voltas");
+      var tot = draft.idas.length * draft.voltas.length, n = pares(), ok = n > 0 && tot <= MAXC;
+      $("#dInfo").textContent = n + (n === 1 ? " combinação válida" : " combinações válidas") + " · mínimo de " + min + " noites";
+      $("#dSave").disabled = !ok || same();
+      if (!ok) say(tot > MAXC ? "No máximo " + MAXC + " combinações de datas." : "Escolha ao menos uma ida e uma volta com " + min + " noites ou mais.", "err");
+      else if (same()) say(""); else say("Alterações ainda não fixadas.");
+    }
+    function add(kind, inputId) {
+      var v = $("#" + inputId).value; if (!v) return;
+      if (draft[kind].indexOf(v) < 0) draft[kind].push(v);
+      draft[kind].sort(); $("#" + inputId).value = ""; paint();
+    }
+    $("#btnIda").addEventListener("click", function () { add("idas", "addIda"); });
+    $("#btnVolta").addEventListener("click", function () { add("voltas", "addVolta"); });
+    $("#addIda").addEventListener("keydown", function (e) { if (e.key === "Enter") add("idas", "addIda"); });
+    $("#addVolta").addEventListener("keydown", function (e) { if (e.key === "Enter") add("voltas", "addVolta"); });
+    $("#datas").addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-rm]"); if (!b) return;
+      var p = b.dataset.rm.split("|"); draft[p[0]] = draft[p[0]].filter(function (x) { return x !== p[1]; }); paint();
+    });
+    $("#dReset").addEventListener("click", function () { draft = { idas: cur.idas.slice(), voltas: cur.voltas.slice() }; paint(); });
+
+    // token
+    $("#ghSave").addEventListener("click", function () {
+      var v = $("#ghTok").value.trim(); if (!v) return; tokSet(v); $("#ghTok").value = ""; say("Token guardado neste navegador.", "ok");
+    });
+    $("#ghDel").addEventListener("click", function () { tokSet(""); $("#ghTok").value = ""; say("Token removido deste navegador.", "ok"); });
+    if (tokGet()) $("#ghTok").placeholder = "Token guardado neste navegador";
+    $("#dCopy").addEventListener("click", function (e) {
+      e.preventDefault();
+      var t = cfgJson();
+      (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { say("JSON copiado.", "ok"); }, function () { window.prompt("Copie o JSON:", t); });
+    });
+
+    // salvar no repositorio
+    $("#dSave").addEventListener("click", function () {
+      var tok = tokGet();
+      if (!tok) { $("#gh").open = true; say("Guarde um token do GitHub abaixo para fixar as datas.", "err"); return; }
+      var btn = $("#dSave"); btn.disabled = true; say("Salvando…");
+      var url = "https://api.github.com/repos/" + REPO + "/contents/" + CFG;
+      var H = { Authorization: "Bearer " + tok, Accept: "application/vnd.github+json" };
+      fetch(url + "?ref=main&t=" + Date.now(), { headers: H, cache: "no-store" })
+        .then(function (r) { if (r.status === 404) return {}; if (!r.ok) throw r.status; return r.json(); })
+        .then(function (f) {
+          var body = { message: "Fixa datas da busca pelo painel", content: btoa(cfgJson()), branch: "main" };
+          if (f && f.sha) body.sha = f.sha;
+          return fetch(url, { method: "PUT", headers: H, body: JSON.stringify(body) });
+        })
+        .then(function (r) {
+          if (!r.ok) throw r.status;
+          cur = { idas: draft.idas.slice(), voltas: draft.voltas.slice() };
+          paint(); say("Datas fixadas. A busca roda sozinha agora e o painel atualiza em poucos minutos.", "ok");
+        })
+        .catch(function (c) {
+          btn.disabled = false;
+          say(c === 401 || c === 403 || c === 404 ? "O GitHub recusou o token (erro " + c + "). Confira se ele tem permissão de escrita em Contents deste repositório." : "Não foi possível salvar. Tente de novo.", "err");
+        });
+    });
+    paint();
   }
 
   function drawDonut(by, avg) {
