@@ -135,10 +135,14 @@ def buscar(ida, volta):
 def ler_historico():
     if not HISTORICO.exists():
         return []
-    rows = []
+    rows, vistos = [], set()
     with HISTORICO.open(encoding="utf-8") as f:
         for l in csv.DictReader(f):
             try:
+                chave = (l["consulta"], l["ida"], l["volta"], int(float(l["preco"])), l["origem"], l["cia"])
+                if chave in vistos:
+                    continue  # ignora linhas repetidas (mesma busca no mesmo dia)
+                vistos.add(chave)
                 rows.append({**l, "preco": float(l["preco"])})
             except (KeyError, ValueError, TypeError):
                 pass
@@ -256,8 +260,9 @@ def main():
     ant = [l["preco"] for l in jan]
     recorde = min(ant) if ant else None
     lim = (hoje - timedelta(days=30)).isoformat()
-    rec30 = [l["preco"] for l in jan if l.get("consulta", "") >= lim]
-    media = statistics.mean(rec30) if len(rec30) >= 6 else None
+    rec30 = [l for l in jan if l.get("consulta", "") >= lim]
+    dias30 = {l["consulta"] for l in rec30}
+    media = statistics.mean(l["preco"] for l in rec30) if len(rec30) >= 6 and len(dias30) >= 3 else None
     salvar(rs, hist)
 
     rs.sort(key=lambda r: r["preco"])
