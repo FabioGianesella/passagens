@@ -202,7 +202,8 @@ dialog.cfg::backdrop{background:rgba(10,15,25,.45);-webkit-backdrop-filter:blur(
 /* escolha de datas */
 .dval{font-size:26px;font-weight:600;letter-spacing:-.04em;margin-top:10px;line-height:1.1}
 .dval small{display:block;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0;margin-top:2px}
-.dpick{position:relative;margin-top:16px}
+.dpick{position:relative}
+.dact .pill[disabled]{opacity:.4;cursor:not-allowed}
 .dchoose{margin-top:0!important;border:0;cursor:pointer;font:inherit;font-weight:500;display:inline-flex;align-items:center;gap:10px}
 .cal{position:absolute;z-index:30;top:calc(100% + 10px);left:0;width:min(360px,calc(100vw - 56px));background:var(--solid);color:var(--text);border-radius:28px;padding:18px;
   box-shadow:0 30px 80px rgba(20,30,50,.28),0 0 0 1px var(--line);--band:color-mix(in srgb,var(--blue) 20%,transparent)}
@@ -565,10 +566,11 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
         '<div class="dcol"><span class="dtag">Ida</span><div class="dttl">São Paulo → Aracaju</div><div class="dval" id="vIda"></div></div>' +
         '<div class="dcol"><span class="dtag">Volta</span><div class="dttl">Aracaju → São Paulo</div><div class="dval" id="vVolta"></div></div>' +
       '</div>' +
+      '<div class="dsum" id="dInfo"></div>' +
+      '<div class="dact">' +
       '<div class="dpick"><button type="button" class="btn dchoose" id="dChoose" aria-haspopup="dialog" aria-expanded="false">' + CAL_ICO + '<span id="dChooseT">Escolher datas</span></button>' +
         '<div class="cal" id="cal" role="dialog" aria-label="Escolher datas de ida e volta" hidden></div></div>' +
-      '<div class="dsum" id="dInfo"></div>' +
-      '<div class="dact"><button type="button" class="btn" id="dSave">Fixar buscas nestas datas</button><button type="button" class="pill" id="dReset">Descartar alterações</button><span class="msg" id="dMsg"></span></div>' +
+        '<button type="button" class="btn" id="dSave">Fixar buscas nestas datas</button><button type="button" class="pill" id="dReset">Descartar alterações</button><span class="msg" id="dMsg"></span></div>' +
       '<div class="dconn" id="dConn"></div></section>';
   }
 
@@ -592,7 +594,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
         : "<span><b>" + n + (n === 1 ? " combinação válida" : " combinações válidas") + "</b> (mínimo de " + min + " noites)</span>";
       var st = $("#dState"), pend = !same();
       st.className = "dstate" + (pend ? " pend" : ""); st.lastChild.textContent = pend ? "Alterações não fixadas" : "Fixado";
-      $("#dSave").disabled = !(n > 0) || !pend;
+      $("#dSave").disabled = !(n > 0) || !pend; $("#dReset").disabled = !pend;
       if (!(n > 0)) say("Escolha uma ida e uma volta com " + min + " noites ou mais.", "err");
       else if (!pend) say(""); else say("Alterações ainda não fixadas.");
       connPaint();
@@ -649,7 +651,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     });
     document.addEventListener("click", function (e) { if (!cal.hidden && !e.target.closest(".dpick")) closeCal(); });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !cal.hidden) { closeCal(); btn.focus(); } });
-    $("#dReset").addEventListener("click", function () { draft = { idas: cur.idas.slice(), voltas: cur.voltas.slice() }; pick = { ida: null, volta: null }; closeCal(); paint(); });
+    $("#dReset").addEventListener("click", function () { draft = { idas: cur.idas.slice(), voltas: cur.voltas.slice() }; pick = { ida: null, volta: null }; closeCal(); paint(); say("Alterações descartadas. Voltou para as datas fixadas.", "ok"); });
 
     function connPaint() {
       $("#dConn").innerHTML = tokGet()
