@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Passagens">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="robots" content="noindex, nofollow">
+<title>Passagens SAO &rarr; AJU</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230071e3'/%3E%3Cpath d='M22 58l56-26-14 38-16-12-12 10v-14z' fill='white'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f5f5f7; --card:#ffffff; --text:#1d1d1f; --muted:#6e6e73; --line:rgba(0,0,0,.08);
+  --accent:#0071e3; --good:#1f8a3c; --warn:#b25e00; --chip:rgba(0,0,0,.05);
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 10px 32px rgba(0,0,0,.05); --radius:22px;
+  --nav:rgba(245,245,247,.72);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#000000; --card:#1c1c1e; --text:#f5f5f7; --muted:#98989d; --line:rgba(255,255,255,.1);
+    --accent:#2997ff; --good:#30d158; --warn:#ff9f0a; --chip:rgba(255,255,255,.09);
+    --shadow:none; --nav:rgba(0,0,0,.65);
+  }
+}
+*{box-sizing:border-box;margin:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg); color:var(--text);
+  font:400 17px/1.47 -apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; letter-spacing:-.011em; min-height:100vh;
+  padding-bottom:max(48px,env(safe-area-inset-bottom));
+}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:980px;margin:0 auto;padding:0 max(20px,env(safe-area-inset-left))}
+
+/* barra superior */
+nav{
+  position:sticky;top:0;z-index:10;
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  background:var(--nav);border-bottom:1px solid var(--line);
+  padding-top:env(safe-area-inset-top);
+}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:52px}
+nav b{font-weight:600;font-size:17px;letter-spacing:-.022em}
+.status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good)}
+.dot.warn{background:var(--warn)}
+
+/* cabecalho */
+header{padding:44px 0 28px}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:clamp(34px,6vw,52px);line-height:1.06;font-weight:700;letter-spacing:-.035em;margin-top:6px}
+header p{color:var(--muted);font-size:19px;margin-top:10px;max-width:560px;letter-spacing:-.016em}
+
+/* cards */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:26px;position:relative}
+.grid{display:grid;gap:16px}
+.g-hero{grid-template-columns:1.35fr 1fr}
+.g-3{grid-template-columns:repeat(3,1fr)}
+.stack{display:grid;gap:16px}
+section{margin-top:16px}
+.label{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:-.005em}
+.big{font-size:clamp(56px,10vw,84px);line-height:1;font-weight:700;letter-spacing:-.045em;margin:10px 0 6px;font-variant-numeric:tabular-nums}
+.mid{font-size:34px;line-height:1.1;font-weight:700;letter-spacing:-.035em;margin-top:8px;font-variant-numeric:tabular-nums}
+.sub{color:var(--muted);font-size:15px;margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:var(--chip);font-size:13px;font-weight:500}
+.chip.good{color:var(--good)} .chip.warn{color:var(--warn)}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;margin-top:20px;padding:10px 20px;border-radius:999px;
+  background:var(--accent);color:#fff;font-size:15px;font-weight:500;transition:opacity .2s,transform .2s;
+}
+.btn:hover{opacity:.88} .btn:active{transform:scale(.98)}
+
+/* titulos de secao */
+.head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.head h2{font-size:22px;font-weight:600;letter-spacing:-.025em}
+
+/* controle segmentado */
+.seg{display:inline-flex;background:var(--chip);border-radius:10px;padding:2px}
+.seg button{
+  font:inherit;font-size:13px;font-weight:500;color:var(--text);background:none;border:0;cursor:pointer;
+  padding:5px 14px;border-radius:8px;transition:background .2s,box-shadow .2s;
+}
+.seg button[aria-pressed="true"]{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+@media (prefers-color-scheme:dark){.seg button[aria-pressed="true"]{background:#636366}}
+
+/* grafico */
+#chart{width:100%;height:260px;position:relative}
+#chart svg{display:block;width:100%;height:100%;overflow:visible}
+.tip{
+  position:absolute;pointer-events:none;background:var(--card);border-radius:12px;padding:8px 12px;font-size:13px;
+  box-shadow:0 4px 24px rgba(0,0,0,.16);opacity:0;transition:opacity .15s;white-space:nowrap;z-index:2;
+}
+.tip b{display:block;font-size:16px;letter-spacing:-.02em}
+.empty{color:var(--muted);text-align:center;padding:60px 12px;font-size:15px}
+
+/* matriz */
+.matrix{display:grid;grid-template-columns:auto repeat(3,1fr);gap:8px;align-items:stretch}
+.matrix .h{font-size:12px;font-weight:600;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center;padding:2px 0}
+.matrix .r{justify-content:flex-start;padding-right:6px}
+.cell{
+  border-radius:16px;padding:14px 8px;text-align:center;
+  background:color-mix(in srgb,var(--accent) calc(var(--i,0)*1%),var(--chip));
+  font-variant-numeric:tabular-nums;font-weight:600;font-size:17px;letter-spacing:-.02em;
+}
+.cell small{display:block;font-weight:400;font-size:11px;color:var(--muted);margin-top:2px}
+.cell.best{outline:2px solid var(--accent);outline-offset:2px}
+.cell.na{background:transparent;border:1px dashed var(--line);color:var(--muted);font-weight:400}
+.hint{color:var(--muted);font-size:13px;margin-top:14px}
+
+/* lista */
+.list{display:grid}
+.row{
+  display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:16px 0;border-top:1px solid var(--line);
+  transition:opacity .2s;
+}
+.row:first-child{border-top:0;padding-top:4px}
+.row:hover{opacity:.72}
+.row .p{font-size:24px;font-weight:700;letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+.row .d{font-size:15px;font-weight:500}
+.row .m{font-size:13px;color:var(--muted)}
+.row .r{display:flex;align-items:center;gap:10px}
+.row .go{color:var(--muted);font-size:20px}
+
+footer{margin-top:36px;color:var(--muted);font-size:13px;text-align:center;line-height:1.6}
+
+@media (max-width:760px){
+  .g-hero,.g-3{grid-template-columns:1fr}
+  .card{padding:22px}
+  header{padding:30px 0 20px}
+  .matrix{gap:6px}
+  .cell{padding:12px 4px;font-size:15px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.fade{animation:in .5s ease both}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <b>Passagens</b>
+    <div class="status"><span class="dot" id="dot"></span><span id="upd">Carregando…</span></div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <header>
+    <div class="eyebrow" id="rota">São Paulo → Aracaju</div>
+    <h1 id="titulo">Semana de 23 a 28 de novembro</h1>
+    <p>Os menores preços de ida e volta, atualizados duas vezes por dia.</p>
+  </header>
+
+  <div id="app"></div>
+
+  <footer id="foot"></footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); };
+  var brl = function (n) { return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }); };
+  var dm = function (iso) { var p = iso.split("-"); return p[2] + "/" + p[1]; };
+  var wd = function (iso) { return new Date(iso + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""); };
+  var dmy = function (iso) { return wd(iso) + " " + dm(iso); };
+  var MES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+  var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); };
+  var safeUrl = function (u) { return /^https:\/\/www\.google\.com\//.test(u || "") ? u : ""; };
+  var escalas = function (n) { return n === 0 ? "Direto" : n + (n === 1 ? " escala" : " escalas"); };
+
+  var state = { range: "30", direct: "all", data: null };
+
+  fetch("data.json?" + Date.now(), { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (d) { state.data = d; init(); })
+    .catch(function () { state.data = null; init(); });
+
+  function init() {
+    var d = state.data;
+    if (!d) { $("#upd").textContent = "Sem dados ainda"; $("#dot").className = "dot warn"; }
+    if (d && d.janela) {
+      var i = d.janela.idas, v = d.janela.voltas;
+      var a = i[0], b = v[v.length - 1];
+      var m = MES[parseInt(b.slice(5, 7), 10) - 1];
+      $("#titulo").textContent = "Semana de " + parseInt(a.slice(8), 10) + " a " + parseInt(b.slice(8), 10) + " de " + m;
+    }
+    render();
+    window.addEventListener("resize", drawChart);
+  }
+
+  function nextRun() {
+    var n = new Date(Date.now() - 3 * 3600 * 1000), h = n.getUTCHours() + n.getUTCMinutes() / 60;
+    if (h < 8) return "hoje às 8h";
+    if (h < 20) return "hoje às 20h";
+    return "amanhã às 8h";
+  }
+
+  function render() {
+    var d = state.data, app = $("#app");
+    if (!d || !d.linhas || !d.linhas.length) {
+      app.innerHTML = '<div class="card empty">Ainda não há consultas para mostrar.<br>Assim que a próxima busca automática rodar, os preços aparecem aqui.</div>';
+      $("#foot").textContent = "";
+      return;
+    }
+    var rows = d.linhas;
+
+    // atualizacao
+    var ageH = (Date.now() - new Date(d.atualizado).getTime()) / 36e5;
+    var ageTxt = ageH < 1 ? "agora" : ageH < 24 ? "há " + Math.round(ageH) + " h" : "há " + Math.round(ageH / 24) + " d";
+    $("#upd").textContent = "Atualizado " + ageTxt;
+    $("#dot").className = "dot" + (ageH > 14 ? " warn" : "");
+
+    // ultima observacao de cada combinacao
+    var by = {};
+    rows.forEach(function (r) {
+      var k = r.ida + "|" + r.volta, c = by[k];
+      if (!c || r.consulta > c.consulta || (r.consulta === c.consulta && r.preco < c.preco)) by[k] = r;
+    });
+    var latest = Object.keys(by).map(function (k) { return by[k]; });
+    var best = latest.reduce(function (a, b) { return b.preco < a.preco ? b : a; });
+    var record = rows.reduce(function (a, b) { return b.preco < a.preco ? b : a; });
+    var lastDay = rows.reduce(function (m, r) { return r.consulta > m ? r.consulta : m; }, "");
+    var cut = new Date(new Date(lastDay + "T12:00:00").getTime() - 30 * 864e5).toISOString().slice(0, 10);
+    var r30 = rows.filter(function (r) { return r.consulta >= cut; });
+    var avg = r30.reduce(function (s, r) { return s + r.preco; }, 0) / r30.length;
+    var dias = {}; rows.forEach(function (r) { dias[r.consulta] = 1; });
+    var nDias = Object.keys(dias).length;
+    var diff = (best.preco / avg - 1) * 100;
+    var teto = d.teto || 0;
+
+    var chips = "";
+    if (r30.length >= 6 && nDias >= 3) {
+      chips += '<span class="chip ' + (diff <= 0 ? "good" : "") + '">' + (diff <= 0 ? "▼ " : "▲ ") + Math.abs(diff).toFixed(0) + "% vs. média de 30 dias</span>";
+    }
+    if (teto && best.preco <= teto) chips += '<span class="chip good">Abaixo de ' + brl(teto) + "</span>";
+    if (best.preco <= record.preco) chips += '<span class="chip good">Menor preço já visto</span>';
+    chips += '<span class="chip">' + esc(escalas(best.escalas)) + "</span>";
+    var link = safeUrl(best.link);
+
+    var html = "";
+    html += '<section class="grid g-hero fade">';
+    html += '<div class="card"><div class="label">Melhor preço agora</div><div class="big">' + brl(best.preco) + "</div>";
+    html += '<div class="sub">' + esc(dmy(best.ida)) + " → " + esc(dmy(best.volta)) + " · " + esc(best.origem) + " · " + esc(best.cia) + "</div>";
+    html += '<div class="chips">' + chips + "</div>";
+    if (link) html += '<a class="btn" href="' + esc(link) + '" target="_blank" rel="noopener">Ver no Google Flights ↗</a>';
+    html += "</div>";
+    html += '<div class="stack">';
+    html += '<div class="card"><div class="label">Menor preço já visto</div><div class="mid">' + brl(record.preco) + '</div><div class="sub">' + esc(dm(record.ida)) + " → " + esc(dm(record.volta)) + " · visto em " + esc(dm(record.consulta)) + "</div></div>";
+    html += '<div class="card"><div class="label">Média dos últimos 30 dias</div><div class="mid">' + (r30.length ? brl(avg) : "—") + '</div><div class="sub">' + r30.length + " consultas em " + nDias + (nDias === 1 ? " dia" : " dias") + "</div></div>";
+    html += "</div></section>";
+
+    html += '<section class="card fade"><div class="head"><h2>Evolução do menor preço</h2>' +
+      '<div class="seg" id="segRange"><button data-v="7" aria-pressed="false">7 dias</button><button data-v="30" aria-pressed="true">30 dias</button><button data-v="all" aria-pressed="false">Tudo</button></div></div>' +
+      '<div id="chart"></div></section>';
+
+    html += '<section class="card fade"><div class="head"><h2>Por combinação de datas</h2></div><div id="matrix"></div>' +
+      '<p class="hint">Último menor preço encontrado para cada par de ida e volta. O contorno azul marca a melhor opção.</p></section>';
+
+    html += '<section class="card fade"><div class="head"><h2>Melhores opções</h2>' +
+      '<div class="seg" id="segDir"><button data-v="all" aria-pressed="true">Todas</button><button data-v="direct" aria-pressed="false">Diretos</button></div></div>' +
+      '<div class="list" id="list"></div></section>';
+
+    app.innerHTML = html;
+
+    // interacoes
+    $("#segRange").addEventListener("click", function (e) {
+      var b = e.target.closest("button"); if (!b) return;
+      state.range = b.dataset.v; setPressed("#segRange", b); drawChart();
+    });
+    $("#segDir").addEventListener("click", function (e) {
+      var b = e.target.closest("button"); if (!b) return;
+      state.direct = b.dataset.v; setPressed("#segDir", b); drawList(latest);
+    });
+
+    drawMatrix(by, best);
+    drawList(latest);
+    drawChart();
+
+    $("#foot").innerHTML = "Busca automática às 8h e 20h (próxima " + nextRun() + ").<br>Preços de ida e volta em reais · Fonte: Google Flights via SerpAPI.";
+  }
+
+  function setPressed(sel, btn) {
+    document.querySelectorAll(sel + " button").forEach(function (b) { b.setAttribute("aria-pressed", b === btn ? "true" : "false"); });
+  }
+
+  function drawMatrix(by, best) {
+    var j = state.data.janela, min = j.min_noites || 0, prices = [];
+    Object.keys(by).forEach(function (k) { prices.push(by[k].preco); });
+    var lo = Math.min.apply(null, prices), hi = Math.max.apply(null, prices);
+    var h = '<div class="matrix"><div class="h"></div>';
+    j.voltas.forEach(function (v) { h += '<div class="h">Volta<br>' + esc(dmy(v)) + "</div>"; });
+    j.idas.forEach(function (i) {
+      h += '<div class="h r">Ida<br>' + esc(dmy(i)) + "</div>";
+      j.voltas.forEach(function (v) {
+        var nights = Math.round((new Date(v) - new Date(i)) / 864e5), c = by[i + "|" + v];
+        if (nights < min) { h += '<div class="cell na">—</div>'; return; }
+        if (!c) { h += '<div class="cell na">sem dados</div>'; return; }
+        var t = hi === lo ? 1 : (hi - c.preco) / (hi - lo);
+        var cls = c === best ? " best" : "";
+        h += '<div class="cell' + cls + '" style="--i:' + Math.round(10 + t * 38) + '" title="Consultado em ' + esc(dm(c.consulta)) + '">' + brl(c.preco) +
+          "<small>" + esc(c.origem) + " · " + esc(escalas(c.escalas)) + "</small></div>";
+      });
+    });
+    $("#matrix").innerHTML = h + "</div>";
+  }
+
+  function drawList(latest) {
+    var items = latest.filter(function (r) { return state.direct === "all" || r.escalas === 0; })
+      .sort(function (a, b) { return a.preco - b.preco; }).slice(0, 8);
+    if (!items.length) { $("#list").innerHTML = '<div class="empty">Nenhuma opção direta encontrada ainda.</div>'; return; }
+    $("#list").innerHTML = items.map(function (r) {
+      var u = safeUrl(r.link), tag = u ? "a" : "div", href = u ? ' href="' + esc(u) + '" target="_blank" rel="noopener"' : "";
+      return "<" + tag + ' class="row"' + href + '><div><div class="p">' + brl(r.preco) + '</div><div class="d">' + esc(dmy(r.ida)) + " → " + esc(dmy(r.volta)) +
+        '</div><div class="m">' + esc(r.origem) + " · " + esc(r.cia) + " · consultado em " + esc(dm(r.consulta)) + '</div></div>' +
+        '<div class="r"><span class="chip ' + (r.escalas === 0 ? "good" : "") + '">' + esc(escalas(r.escalas)) + '</span>' + (u ? '<span class="go">›</span>' : "") + "</div></" + tag + ">";
+    }).join("");
+  }
+
+  function drawChart() {
+    var host = $("#chart"); if (!host || !state.data) return;
+    var rows = state.data.linhas, byDay = {};
+    rows.forEach(function (r) { if (byDay[r.consulta] === undefined || r.preco < byDay[r.consulta]) byDay[r.consulta] = r.preco; });
+    var days = Object.keys(byDay).sort();
+    if (state.range !== "all" && days.length) {
+      var last = new Date(days[days.length - 1] + "T12:00:00").getTime(), n = parseInt(state.range, 10);
+      days = days.filter(function (x) { return (last - new Date(x + "T12:00:00").getTime()) / 864e5 <= n; });
+    }
+    if (days.length < 2) {
+      host.innerHTML = '<div class="empty">O gráfico aparece quando houver consultas em 2 dias ou mais.<br>Por enquanto: ' +
+        (days.length ? brl(byDay[days[0]]) + " em " + dm(days[0]) : "sem dados") + ".</div>";
+      return;
+    }
+    var W = host.clientWidth, H = 260, pl = 48, pr = 12, pt = 14, pb = 28;
+    var vals = days.map(function (x) { return byDay[x]; }), teto = state.data.teto || 0;
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    if (teto) { lo = Math.min(lo, teto); hi = Math.max(hi, teto); }
+    var pad = (hi - lo) * 0.15 || hi * 0.05 || 10; lo = Math.max(0, lo - pad); hi += pad;
+    var X = function (i) { return pl + (W - pl - pr) * i / (days.length - 1); };
+    var Y = function (v) { return pt + (H - pt - pb) * (1 - (v - lo) / (hi - lo)); };
+    var pts = days.map(function (x, i) { return [X(i), Y(byDay[x])]; });
+    var line = pts.map(function (p, i) { return (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" ");
+    var area = line + " L" + pts[pts.length - 1][0].toFixed(1) + " " + (H - pb) + " L" + pts[0][0].toFixed(1) + " " + (H - pb) + " Z";
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Gráfico do menor preço por dia">';
+    s += '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".22"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>';
+    for (var t = 0; t <= 3; t++) {
+      var v = lo + (hi - lo) * t / 3, y = Y(v);
+      s += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y + '" y2="' + y + '" stroke="var(--line)"/>';
+      s += '<text x="' + (pl - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="11" fill="var(--muted)">' + Math.round(v / 10) * 10 + "</text>";
+    }
+    if (teto && teto > lo && teto < hi) {
+      s += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + Y(teto) + '" y2="' + Y(teto) + '" stroke="var(--good)" stroke-dasharray="5 5" opacity=".7"/>';
+      s += '<text x="' + (pl + 4) + '" y="' + (Y(teto) - 6) + '" text-anchor="start" font-size="11" fill="var(--good)">teto ' + brl(teto) + "</text>";
+    }
+    s += '<path d="' + area + '" fill="url(#g)"/><path d="' + line + '" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+    var step = Math.max(1, Math.ceil(days.length / 6));
+    days.forEach(function (x, i) {
+      if (i % step === 0 || i === days.length - 1) s += '<text x="' + X(i) + '" y="' + (H - 6) + '" text-anchor="middle" font-size="11" fill="var(--muted)">' + dm(x) + "</text>";
+    });
+    pts.forEach(function (p) { s += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="3.5" fill="var(--card)" stroke="var(--accent)" stroke-width="2"/>'; });
+    s += '<circle id="hl" r="6" fill="var(--accent)" stroke="var(--card)" stroke-width="3" opacity="0"/></svg><div class="tip" id="tip"></div>';
+    host.innerHTML = s;
+
+    var tip = $("#tip"), hl = $("#hl");
+    function move(e) {
+      var rect = host.getBoundingClientRect(), x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left, k = 0, dmin = 1e9;
+      pts.forEach(function (p, i) { var dd = Math.abs(p[0] - x); if (dd < dmin) { dmin = dd; k = i; } });
+      hl.setAttribute("cx", pts[k][0]); hl.setAttribute("cy", pts[k][1]); hl.setAttribute("opacity", 1);
+      tip.innerHTML = "<b>" + brl(byDay[days[k]]) + "</b>" + dmy(days[k]);
+      tip.style.opacity = 1;
+      var tx = Math.min(Math.max(pts[k][0] - tip.offsetWidth / 2, 0), W - tip.offsetWidth);
+      tip.style.left = tx + "px"; tip.style.top = Math.max(pts[k][1] - tip.offsetHeight - 14, 0) + "px";
+    }
+    function leave() { tip.style.opacity = 0; hl.setAttribute("opacity", 0); }
+    host.onpointermove = move; host.onpointerleave = leave; host.ontouchmove = move; host.ontouchend = leave;
+  }
+})();
+</script>
+</body>
+</html>
