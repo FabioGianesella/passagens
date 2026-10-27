@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Passagens">
 <meta name="robots" content="noindex, nofollow">
-<title>Passagens SAO &rarr; AJU</title>
+<title>Passagens AJU &rarr; SAO</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='28' fill='%230f1f1e'/%3E%3Cpath d='M22 58l56-26-14 38-16-12-12 10v-14z' fill='white'/%3E%3C/svg%3E">
 <style>
 :root{
@@ -200,7 +200,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
           <div class="s">Acompanhe os preços de ida e volta</div>
           <h1 id="titulo">Semana de 23 a 28 de novembro</h1>
         </div>
-        <div class="route"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 13.5L3 11l18-7-6 17-3.5-7.5z"/></svg><span id="rota">São Paulo → Aracaju</span></div>
+        <div class="route"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 13.5L3 11l18-7-6 17-3.5-7.5z"/></svg><span id="rota">Aracaju → São Paulo → Aracaju</span></div>
       </header>
       <div id="app"></div>
       <footer id="foot"></footer>
@@ -232,10 +232,10 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
   var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); };
   var safeUrl = function (u) { return /^https:\/\/www\.google\.com\//.test(u || "") ? u : ""; };
   var noites = function (a, b) { return Math.round((new Date(b) - new Date(a)) / 864e5); };
-  var dest = function () { return (state.data && state.data.rota && state.data.rota.destino) || "AJU"; };
+  var dest = function () { return (state.data && state.data.rota && state.data.rota.origem) || "AJU"; };
   var legs = function (r) {
-    return '<div class="legs"><div class="leg"><span class="tag">Ida</span><b>' + esc(dmy(r.ida)) + "</b><span>" + esc(r.origem) + " → " + esc(dest()) + (r.cia ? " · " + esc(r.cia) : "") +
-      '</span></div><div class="leg"><span class="tag">Volta</span><b>' + esc(dmy(r.volta)) + "</b><span>" + esc(dest()) + " → São Paulo</span></div></div>";
+    return '<div class="legs"><div class="leg"><span class="tag">Ida</span><b>' + esc(dmy(r.ida)) + "</b><span>" + esc(dest()) + " → " + esc(r.aeroporto) + (r.cia ? " · " + esc(r.cia) : "") +
+      '</span></div><div class="leg"><span class="tag">Volta</span><b>' + esc(dmy(r.volta)) + "</b><span>" + esc(r.aeroporto) + " → " + esc(dest()) + "</span></div></div>";
   };
   var escalas = function (n) { return n === 0 ? "Direto" : n + (n === 1 ? " escala" : " escalas"); };
 
@@ -321,7 +321,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     var html = '<div class="board">';
     html += '<section class="card a-hero fade" id="resumo"><div class="hero"><div>';
     html += '<div class="label">Melhor preço agora · total ida e volta</div><div class="big">' + brl(best.preco) + "</div>";
-    html += legs(best) + '<div class="total">' + noites(best.ida, best.volta) + " noites em Aracaju · preço total, ida e volta</div>";
+    html += legs(best) + '<div class="total">' + noites(best.ida, best.volta) + " noites em São Paulo · preço total, ida e volta</div>";
     html += '<div class="chips" style="margin-top:14px">' + chips + "</div>";
     if (link) html += '<a class="btn" href="' + esc(link) + '" target="_blank" rel="noopener">Ver no Google Flights ' + ARW.replace("<svg", '<svg width="14" height="14"') + "</a>";
     html += '</div><div class="stats">';
@@ -378,7 +378,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
         var t = hi === lo ? 1 : (hi - c.preco) / (hi - lo);
         var cls = c === best ? " best" : "";
         h += '<div class="cell' + cls + '" style="--i:' + Math.round(10 + t * 38) + '" title="Consultado em ' + esc(dm(c.consulta)) + '">' + brl(c.preco) +
-          "<small>" + esc(c.origem) + " · " + esc(escalas(c.escalas)) + " na ida</small><small>" + nights + (nights === 1 ? " noite" : " noites") + "</small></div>";
+          "<small>" + esc(dest()) + " → " + esc(c.aeroporto) + " · " + esc(escalas(c.escalas)) + " na ida</small><small>" + nights + (nights === 1 ? " noite" : " noites") + "</small></div>";
       });
     });
     $("#matrix").innerHTML = h + "</div>";
@@ -417,7 +417,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
       var u = safeUrl(r.link), tag = u ? "a" : "div", href = u ? ' href="' + esc(u) + '" target="_blank" rel="noopener"' : "";
       return "<" + tag + ' class="opt"' + href + '><div class="t"><div class="p">' + brl(r.preco) + '</div><span class="ck"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12L12 4M5 4h7v7"/></svg></span></div>' +
         '<div class="d">Ida ' + esc(dmy(r.ida)) + " · Volta " + esc(dmy(r.volta)) + '</div>' +
-        '<div class="m">' + esc(r.origem) + " → " + esc(dest()) + " → São Paulo · " + esc(r.cia) + " · " + noites(r.ida, r.volta) + " noites</div>" +
+        '<div class="m">' + esc(dest()) + " → " + esc(r.aeroporto) + " → " + esc(dest()) + " · " + esc(r.cia) + " · " + noites(r.ida, r.volta) + " noites</div>" +
         '<span class="chip ' + (r.escalas === 0 ? "good" : "") + '">' + esc(escalas(r.escalas)) + " na ida</span></" + tag + ">";
     }).join("");
   }
