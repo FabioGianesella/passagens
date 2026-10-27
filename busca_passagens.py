@@ -11,7 +11,8 @@ Regras de aviso:
   - Falha na busca, cota esgotada ou erro inesperado -> aviso de falha.
   - Fora disso o script so grava no historico (sem barulho).
 """
-import csv, json, os, statistics, sys, unicodedata, requests
+import csv
+import json, os, statistics, sys, unicodedata, requests
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -27,6 +28,7 @@ MAX_ESCALAS = 1                  # None = qualquer; 0 = so direto; 1 = ate 1 par
 TETO_ALERTA = 1500               # avisa sempre que houver preco igual ou abaixo (R$)
 QUEDA_PERCENTUAL = 10            # avisa se o preco ficar X% abaixo da media dos ultimos 30 dias
 HISTORICO = Path(__file__).with_name("historico.csv")
+VOOS_NOVOS = Path(__file__).with_name("voos_novos.json")
 GRAFICO = Path(__file__).with_name("grafico.png")
 CONFIG = Path(__file__).with_name("config.json")   # datas escolhidas e fixadas pelo painel
 # ==========================================================
@@ -130,6 +132,21 @@ def resumo(o, ida, volta, link):
             "escalas": max(len(t) - 1, 0), "link": link}
 
 
+def detalhe(o):
+    """Dados de um voo de ida para exibir no painel (horarios, duracao, conexoes)."""
+    t = o.get("flights", [])
+    if not t:
+        return None
+    return {"preco": int(o["price"]),
+            "cia": ", ".join(dict.fromkeys(x.get("airline", "") for x in t)),
+            "origem": t[0].get("departure_airport", {}).get("id", ""),
+            "saida": t[0].get("departure_airport", {}).get("time", ""),
+            "chegada": t[-1].get("arrival_airport", {}).get("time", ""),
+            "duracao": o.get("total_duration") or sum(x.get("duration", 0) for x in t),
+            "escalas": max(len(t) - 1, 0),
+            "paradas": [(l.get("id") or "") for l in (o.get("layovers") or [])]}
+
+
 def buscar(ida, volta):
     params = {"engine": "google_flights", "departure_id": ORIGENS, "arrival_id": DESTINO,
               "outbound_date": ida.isoformat(), "return_date": volta.isoformat(), "type": 1,
@@ -145,6 +162,15 @@ def buscar(ida, volta):
     link = data.get("search_metadata", {}).get("google_flights_url", "")
     res = resumo(min(ofertas, key=lambda x: x["price"]), ida, volta, link)
     diretos = [o for o in ofertas if len(o.get("flights", [])) == 1]
+    voos, vistos = [], set()
+    for o in sorted(ofertas, key=lambda x: x["price"]):
+        d = detalhe(o)
+        k = (d["saida"], d["chegada"], d["cia"]) if d else None
+        if d and k not in vistos:
+            vistos.add(k); voos.append(d)
+        if len(voos) >= 5:
+            break
+    res["voos"] = voos
     res["direto"] = resumo(min(diretos, key=lambda x: x["price"]), ida, volta, link) if diretos else None
     return res
 
@@ -282,6 +308,12 @@ def main():
     dias30 = {l["consulta"] for l in rec30}
     media = statistics.mean(l["preco"] for l in rec30) if len(rec30) >= 6 and len(dias30) >= 3 else None
     salvar(rs, hist)
+    try:  # voos detalhados desta rodada; o gerar_dados.py junta ao painel
+        VOOS_NOVOS.write_text(json.dumps(
+            {f"{r['ida']}|{r['volta']}": {"consulta": hoje.isoformat(), "link": r.get("link", ""), "voos": r.get("voos", [])}
+             for r in rs}, ensure_ascii=False), encoding="utf-8")
+    except Exception as e:
+        print("Nao salvei os voos detalhados:", type(e).__name__)
 
     rs.sort(key=lambda r: r["preco"])
     melhor = rs[0]
