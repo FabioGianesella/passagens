@@ -11,23 +11,41 @@ Regras de aviso:
   - Falha na busca, cota esgotada ou erro inesperado -> aviso de falha.
   - Fora disso o script so grava no historico (sem barulho).
 """
-import csv, os, statistics, sys, unicodedata, requests
+import csv, json, os, statistics, sys, unicodedata, requests
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
 # ====================== CONFIGURACAO ======================
 ORIGENS = "CGH,GRU,VCP"          # SAO = Congonhas, Guarulhos e Viracopos: sai daqui e volta pra ca
 DESTINO = "AJU"
-IDAS = [date(2026, 11, 23), date(2026, 11, 24), date(2026, 11, 25)]    # dias de ida possiveis
-VOLTAS = [date(2026, 11, 28)]  # volta fixa em 28/11
+IDAS_PADRAO = [date(2026, 11, 23), date(2026, 11, 24), date(2026, 11, 25)]    # usado se nao houver config.json valido
+VOLTAS_PADRAO = [date(2026, 11, 28)]
 MIN_NOITES = 2                   # minimo de noites entre ida e volta
+MAX_COMBINACOES = 12             # limite de pares ida/volta aceitos no config.json
 MAX_BUSCAS = 4                   # buscas por execucao (2 execucoes/dia: 4 x 2 x 30 = 240 de 250/mes)
 MAX_ESCALAS = 1                  # None = qualquer; 0 = so direto; 1 = ate 1 parada
 TETO_ALERTA = 1500               # avisa sempre que houver preco igual ou abaixo (R$)
 QUEDA_PERCENTUAL = 10            # avisa se o preco ficar X% abaixo da media dos ultimos 30 dias
 HISTORICO = Path(__file__).with_name("historico.csv")
 GRAFICO = Path(__file__).with_name("grafico.png")
+CONFIG = Path(__file__).with_name("config.json")   # datas escolhidas e fixadas pelo painel
 # ==========================================================
+
+def carregar_datas():
+    """Le as datas de config.json (gravado pelo painel). Se faltar ou for invalido, usa o padrao."""
+    try:
+        c = json.loads(CONFIG.read_text(encoding="utf-8"))
+        idas = sorted({date.fromisoformat(x) for x in c["idas"]})
+        voltas = sorted({date.fromisoformat(x) for x in c["voltas"]})
+        if (idas and voltas and len(idas) * len(voltas) <= MAX_COMBINACOES
+                and any((v - i).days >= MIN_NOITES for i in idas for v in voltas)):
+            return idas, voltas
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return IDAS_PADRAO, VOLTAS_PADRAO
+
+
+IDAS, VOLTAS = carregar_datas()
 
 KEY = os.getenv("SERPAPI_KEY")
 TOPIC = (os.getenv("NTFY_TOPIC") or "").strip()
@@ -187,7 +205,7 @@ def grafico(jan):
             return None
         fig, ax = plt.subplots(figsize=(8, 4))
         ax.plot([dm(d) for d in dias], [por_dia[d] for d in dias], marker="o")
-        ax.set_title("Menor preco por dia - SAO > AJU (23 a 28/11)")
+        ax.set_title(f"Menor preco por dia - SAO > AJU ({IDAS[0]:%d/%m} a {VOLTAS[-1]:%d/%m})")
         ax.set_ylabel("R$")
         ax.grid(alpha=0.3)
         fig.tight_layout()
