@@ -72,7 +72,7 @@ h1{font-size:clamp(34px,5vw,58px);line-height:1.04;font-weight:500;letter-spacin
 
 /* tabuleiro */
 .board{display:grid;gap:18px;grid-template-columns:minmax(270px,.95fr) minmax(250px,.9fr) 1.6fr;
-  grid-template-areas:"opts donut chart" "opts hero hero" "combos combos combos" "datas datas datas"}
+  grid-template-areas:"datas datas datas" "opts donut chart" "opts hero hero" "combos combos combos"}
 .a-opts{grid-area:opts}.a-donut{grid-area:donut}.a-chart{grid-area:chart}.a-hero{grid-area:hero}.a-combos{grid-area:combos}.a-datas{grid-area:datas}
 .card{background:var(--card);border:1px solid var(--cardb);border-radius:34px;padding:24px;position:relative;scroll-margin-top:20px;min-width:0}
 .ch{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
@@ -166,26 +166,57 @@ input[type=date],input[type=password]{font:inherit;font-size:14px;border:1px sol
 .dact .btn{margin-top:0;border:0;cursor:pointer;font:inherit;font-weight:500}
 .dact .btn[disabled]{opacity:.4;cursor:not-allowed}
 .msg{font-size:13px;color:var(--muted)} .msg.ok{color:var(--good)} .msg.err{color:var(--warn)}
-details.gh{margin-top:16px;border-top:1px solid var(--line);padding-top:14px;font-size:14px}
-details.gh summary{cursor:pointer;color:var(--muted);font-size:13px;font-weight:500}
-details.gh p{color:var(--muted);margin:10px 0;font-size:13px;line-height:1.5}
-details.gh a{text-decoration:underline}
-.ghrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+/* datas: destaque */
+.a-datas{padding:28px}
+.dtitle{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.dtitle h2{font-size:26px;font-weight:600;letter-spacing:-.04em}
+.dtitle p{color:var(--muted);font-size:14px;margin-top:4px;max-width:560px}
+.dstate{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;background:var(--chip)}
+.dstate i{width:8px;height:8px;border-radius:50%;background:var(--good)}
+.dstate.pend{color:var(--warn)} .dstate.pend i{background:var(--warn)}
+.dtag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.dcol .dttl{font-size:20px;font-weight:600;letter-spacing:-.03em;margin:2px 0 0}
+.dcol .dsub{font-size:13px;color:var(--muted)}
+.dchip{font-size:15px;padding:8px 8px 8px 16px}
+.dsum{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px;padding:14px 18px;border-radius:22px;background:var(--chip);font-size:14px}
+.dsum b{font-weight:600}
+.dconn{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--muted)}
+.dconn .lnk{border:0;background:none;padding:0;text-decoration:underline;cursor:pointer;color:var(--text);font:inherit;font-size:13px}
+.dconn .ok{color:var(--good)} .dconn .no{color:var(--warn)}
+/* configuracoes */
+dialog.cfg{margin:auto;border:0;border-radius:32px;padding:0;width:min(580px,calc(100vw - 24px));max-height:calc(100vh - 32px);background:var(--solid);color:var(--text);box-shadow:0 40px 120px rgba(0,0,0,.4)}
+dialog.cfg::backdrop{background:rgba(10,15,25,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.cfgb{padding:28px}
+.cfgh{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cfgh h2{font-size:26px;font-weight:600;letter-spacing:-.04em}
+.cfgs{margin-top:20px;border-radius:26px;padding:20px;background:var(--chip)}
+.cfgs h3{font-size:17px;font-weight:600;letter-spacing:-.02em;margin-bottom:4px}
+.cfgs p{color:var(--muted);font-size:13px;line-height:1.5;margin:6px 0}
+.cfgs a{text-decoration:underline}
+.cfgs ol{margin:8px 0 8px 18px;color:var(--muted);font-size:13px;line-height:1.6}
+.ghrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
 .ghrow input{flex:1;min-width:200px}
+.gstat{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.gstat i{width:8px;height:8px;border-radius:50%;background:var(--warn)} .gstat.on i{background:var(--good)}
+.tbtn{width:40px;height:40px}
 footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-height:1.6}
 
 @media (max-width:1100px){
-  .board{grid-template-columns:1fr 1fr;grid-template-areas:"hero hero" "chart chart" "donut opts" "combos combos" "datas datas"}
+  .board{grid-template-columns:1fr 1fr;grid-template-areas:"datas datas" "hero hero" "chart chart" "donut opts" "combos combos"}
   .top{grid-template-columns:1fr auto}
   .pills.main{grid-column:1/-1;grid-row:2;justify-content:flex-start}
 }
 @media (max-width:760px){
   .dgrid{grid-template-columns:1fr}
+  #tema{flex-wrap:nowrap;gap:4px}#tema .pill{padding:4px 9px}
+  .right{gap:8px}.status{display:none}
+  .brand{gap:8px;font-size:19px}.logo{width:30px;height:30px}.tbtn{width:34px;height:34px}
+  #tema .pill{font-size:11px;padding:4px 7px}
   body{padding:10px}
   .app{border-radius:30px;padding:20px 16px 26px}
   .body{grid-template-columns:1fr;gap:0}
   .rail{display:none}
-  .board{grid-template-columns:1fr;grid-template-areas:"hero" "donut" "chart" "opts" "combos" "datas"}
+  .board{grid-template-columns:1fr;grid-template-areas:"datas" "hero" "donut" "chart" "opts" "combos"}
   .hero{grid-template-columns:1fr}
   .card{border-radius:28px;padding:20px}
   .status #upd{display:none}
@@ -206,6 +237,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
       <button class="pill" data-v="all" aria-pressed="false">Tudo</button>
     </div>
     <div class="right">
+      <button type="button" class="ib tbtn" id="openCfg" title="Configurações" aria-label="Configurações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
       <div class="status"><span class="dot" id="dot"></span><span id="upd">Carregando…</span></div>
       <div class="pills sm" id="tema" role="group" aria-label="Aparência">
         <button class="pill" data-t="auto" aria-pressed="true">Auto</button>
@@ -217,12 +249,12 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
 
   <div class="body">
     <nav class="rail" aria-label="Seções">
-      <a class="ib on" href="#resumo" title="Resumo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg></a>
+      <a class="ib on" href="#datas" title="Datas da busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg></a>
+<a class="ib" href="#resumo" title="Resumo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg></a>
       <a class="ib" href="#evolucao" title="Evolução"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l5-6 4 3 7-9"/><path d="M4 21h16"/></svg></a>
       <a class="ib" href="#visao" title="Visão geral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9h9"/><path d="M20.5 15A9 9 0 1 1 9 3.5"/></svg></a>
       <a class="ib" href="#opcoes" title="Melhores opções"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg></a>
-      <a class="ib" href="#datas" title="Datas da busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg></a>
-      <a class="ib" href="#combos" title="Combinações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M10 10v9.5"/></svg></a>
+            <a class="ib" href="#combos" title="Combinações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M10 10v9.5"/></svg></a>
     </nav>
     <main>
       <header class="hd">
@@ -237,6 +269,29 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     </main>
   </div>
 </div>
+
+<dialog class="cfg" id="cfg" aria-labelledby="cfgT">
+  <div class="cfgb">
+    <div class="cfgh"><h2 id="cfgT">Configurações</h2><button type="button" class="ib tbtn" id="closeCfg" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="cfgs">
+      <h3>Conexão com o GitHub</h3>
+      <div class="gstat" id="ghStatus"><i></i><span>Não conectado</span></div>
+      <p>Necessária para fixar as datas da busca. O painel grava as datas no repositório usando um token do GitHub, guardado somente neste navegador.</p>
+      <ol>
+        <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Crie um token</a> só para o repositório <b>passagens</b>, com <b>Contents: Read and write</b> e validade de 90 dias.</li>
+        <li>Cole o código (começa com <b>github_pat_</b>) abaixo e clique em <b>Guardar token</b>.</li>
+      </ol>
+      <div class="ghrow"><input type="password" id="ghTok" autocomplete="off" placeholder="Cole o token aqui" aria-label="Token do GitHub"><button type="button" class="pill" id="ghSave">Guardar token</button><button type="button" class="pill" id="ghDel">Remover</button></div>
+      <div class="msg" id="ghMsg"></div>
+    </div>
+    <div class="cfgs">
+      <h3>Alternativa sem token</h3>
+      <p>Copie as datas escolhidas em formato JSON e cole no arquivo <a href="https://github.com/FabioGianesella/passagens/edit/main/config.json" target="_blank" rel="noopener">config.json</a> do GitHub.</p>
+      <div class="ghrow"><button type="button" class="pill" id="dCopy">Copiar JSON das datas</button></div>
+      <div class="msg" id="cpMsg"></div>
+    </div>
+  </div>
+</dialog>
 
 <script>
 (function () {
@@ -286,6 +341,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
       var span = Math.round((new Date(b) - new Date(a)) / 864e5);
       $("#titulo").textContent = (span <= 7 ? "Semana de " : "Período de ") + (a.slice(0, 7) === b.slice(0, 7) ? da + " a " + db + " de " + mb : da + " de " + ma + " a " + db + " de " + mb);
     }
+    initCfg();
     document.querySelectorAll("#range button").forEach(function (b) {
       b.addEventListener("click", function () {
         state.range = b.dataset.v;
@@ -440,26 +496,50 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     $("#matrix").innerHTML = h + "</div>";
   }
 
+  function ghPaint() {
+    var on = !!tokGet(), g = $("#ghStatus");
+    g.className = "gstat" + (on ? " on" : ""); g.lastChild.textContent = on ? "Conectado neste navegador" : "Não conectado";
+    $("#ghTok").placeholder = on ? "Token guardado — cole outro para substituir" : "Cole o token aqui";
+    if (window.__connPaint) window.__connPaint();
+  }
+  function openCfg() { var d = $("#cfg"); if (d.showModal) d.showModal(); else d.setAttribute("open", ""); ghPaint(); }
+  function initCfg() {
+    var d = $("#cfg"), gm = $("#ghMsg");
+    $("#openCfg").addEventListener("click", openCfg);
+    $("#closeCfg").addEventListener("click", function () { d.close(); });
+    d.addEventListener("click", function (e) { if (e.target === d) d.close(); });
+    $("#ghSave").addEventListener("click", function () {
+      var v = $("#ghTok").value.trim();
+      if (!v) { gm.textContent = "Cole o token no campo acima."; gm.className = "msg err"; return; }
+      tokSet(v); $("#ghTok").value = ""; gm.textContent = "Token guardado neste navegador."; gm.className = "msg ok"; ghPaint();
+    });
+    $("#ghDel").addEventListener("click", function () { tokSet(""); $("#ghTok").value = ""; gm.textContent = "Token removido deste navegador."; gm.className = "msg ok"; ghPaint(); });
+    $("#dCopy").addEventListener("click", function () {
+      var cm = $("#cpMsg"), t = window.__cfgJson ? window.__cfgJson() : "";
+      if (!t) { cm.textContent = "Datas ainda não carregadas."; cm.className = "msg err"; return; }
+      (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { cm.textContent = "JSON copiado."; cm.className = "msg ok"; }, function () { window.prompt("Copie o JSON:", t); });
+    });
+    ghPaint();
+  }
+
   var REPO = "FabioGianesella/passagens", CFG = "config.json", MAXC = 12;
   var tokGet = function () { try { return localStorage.getItem("gh_tok") || ""; } catch (e) { return ""; } };
   var tokSet = function (v) { try { if (v) localStorage.setItem("gh_tok", v); else localStorage.removeItem("gh_tok"); } catch (e) {} };
 
   function datasHtml() {
     var hoje = new Date(Date.now() - 3 * 36e5).toISOString().slice(0, 10);
-    return '<section class="card a-datas fade" id="datas"><div class="ch"><h2>Datas da busca</h2><span class="sub" id="dInfo"></span></div>' +
+    return '<section class="card a-datas fade" id="datas">' +
+      '<div class="dtitle"><div><h2>Datas da busca</h2><p>Escolha quando você quer ir e voltar. A busca automática (08h e 20h) consulta somente estas datas.</p></div>' +
+      '<span class="dstate" id="dState"><i></i><span>Fixado</span></span></div>' +
       '<div class="dgrid">' +
-      '<div class="dcol"><div class="label">Datas de ida · São Paulo → Aracaju</div><div class="dchips" id="dIda"></div>' +
-        '<div class="dadd"><input type="date" id="addIda" min="' + hoje + '" aria-label="Adicionar data de ida"><button type="button" class="pill" id="btnIda">Adicionar</button></div></div>' +
-      '<div class="dcol"><div class="label">Datas de volta · Aracaju → São Paulo</div><div class="dchips" id="dVolta"></div>' +
-        '<div class="dadd"><input type="date" id="addVolta" min="' + hoje + '" aria-label="Adicionar data de volta"><button type="button" class="pill" id="btnVolta">Adicionar</button></div></div>' +
+      '<div class="dcol"><span class="dtag">Ida</span><div class="dttl">São Paulo → Aracaju</div><div class="dsub">Datas em que você pode embarcar</div><div class="dchips" id="dIda"></div>' +
+        '<div class="dadd"><input type="date" id="addIda" min="' + hoje + '" aria-label="Adicionar data de ida"><button type="button" class="pill" id="btnIda">Adicionar data</button></div></div>' +
+      '<div class="dcol"><span class="dtag">Volta</span><div class="dttl">Aracaju → São Paulo</div><div class="dsub">Datas em que você pode voltar</div><div class="dchips" id="dVolta"></div>' +
+        '<div class="dadd"><input type="date" id="addVolta" min="' + hoje + '" aria-label="Adicionar data de volta"><button type="button" class="pill" id="btnVolta">Adicionar data</button></div></div>' +
       '</div>' +
+      '<div class="dsum" id="dInfo"></div>' +
       '<div class="dact"><button type="button" class="btn" id="dSave">Fixar buscas nestas datas</button><button type="button" class="pill" id="dReset">Descartar alterações</button><span class="msg" id="dMsg"></span></div>' +
-      '<details class="gh" id="gh"><summary>Conexão com o GitHub (necessária para salvar)</summary>' +
-        '<p>Para gravar as datas no repositório, este navegador precisa de um token do GitHub restrito a este repositório, com permissão de leitura e escrita em <b>Contents</b>. ' +
-        '<a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Criar token</a>. Ele fica guardado somente neste navegador.</p>' +
-        '<div class="ghrow"><input type="password" id="ghTok" autocomplete="off" placeholder="Cole o token aqui"><button type="button" class="pill" id="ghSave">Guardar token</button><button type="button" class="pill" id="ghDel">Remover</button></div>' +
-        '<p>Sem token? <a href="#" id="dCopy">Copie o JSON</a> e cole no arquivo <a href="https://github.com/' + REPO + '/edit/main/' + CFG + '" target="_blank" rel="noopener">config.json</a> no GitHub.</p>' +
-      '</details></section>';
+      '<div class="dconn" id="dConn"></div></section>';
   }
 
   function initDatas() {
@@ -478,7 +558,11 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     function paint() {
       $("#dIda").innerHTML = chips("idas"); $("#dVolta").innerHTML = chips("voltas");
       var tot = draft.idas.length * draft.voltas.length, n = pares(), ok = n > 0 && tot <= MAXC;
-      $("#dInfo").textContent = n + (n === 1 ? " combinação válida" : " combinações válidas") + " · mínimo de " + min + " noites";
+      var lista = function (k) { return draft[k].map(function (x) { return dmy(x); }).join(", ") || "—"; };
+      $("#dInfo").innerHTML = "<span><b>Ida:</b> " + esc(lista("idas")) + "</span><span>·</span><span><b>Volta:</b> " + esc(lista("voltas")) + "</span><span>·</span><span><b>" + n + (n === 1 ? " combinação válida" : " combinações válidas") + "</b> (mínimo de " + min + " noites)</span>";
+      var st = $("#dState"), pend = !same();
+      st.className = "dstate" + (pend ? " pend" : ""); st.lastChild.textContent = pend ? "Alterações não fixadas" : "Fixado";
+      connPaint();
       $("#dSave").disabled = !ok || same();
       if (!ok) say(tot > MAXC ? "No máximo " + MAXC + " combinações de datas." : "Escolha ao menos uma ida e uma volta com " + min + " noites ou mais.", "err");
       else if (same()) say(""); else say("Alterações ainda não fixadas.");
@@ -498,22 +582,18 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     });
     $("#dReset").addEventListener("click", function () { draft = { idas: cur.idas.slice(), voltas: cur.voltas.slice() }; paint(); });
 
-    // token
-    $("#ghSave").addEventListener("click", function () {
-      var v = $("#ghTok").value.trim(); if (!v) return; tokSet(v); $("#ghTok").value = ""; say("Token guardado neste navegador.", "ok");
-    });
-    $("#ghDel").addEventListener("click", function () { tokSet(""); $("#ghTok").value = ""; say("Token removido deste navegador.", "ok"); });
-    if (tokGet()) $("#ghTok").placeholder = "Token guardado neste navegador";
-    $("#dCopy").addEventListener("click", function (e) {
-      e.preventDefault();
-      var t = cfgJson();
-      (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { say("JSON copiado.", "ok"); }, function () { window.prompt("Copie o JSON:", t); });
-    });
-
+    function connPaint() {
+      $("#dConn").innerHTML = tokGet()
+        ? '<span class="ok">● GitHub conectado</span><span>As datas fixadas valem para as próximas buscas.</span>'
+        : '<span class="no">● GitHub não conectado</span><span>Para fixar as datas, conecte em</span><button type="button" class="lnk" id="goCfg">Configurações</button>';
+      var g = $("#goCfg"); if (g) g.addEventListener("click", openCfg);
+    }
+    window.__connPaint = connPaint;
+    window.__cfgJson = cfgJson;
     // salvar no repositorio
     $("#dSave").addEventListener("click", function () {
       var tok = tokGet();
-      if (!tok) { $("#gh").open = true; say("Guarde um token do GitHub abaixo para fixar as datas.", "err"); return; }
+      if (!tok) { say("Conecte o GitHub em Configurações para fixar as datas.", "err"); openCfg(); return; }
       var btn = $("#dSave"); btn.disabled = true; say("Salvando…");
       var url = "https://api.github.com/repos/" + REPO + "/contents/" + CFG;
       var H = { Authorization: "Bearer " + tok, Accept: "application/vnd.github+json" };
