@@ -398,7 +398,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     var j = state.data.janela, min = j.min_noites || 0, prices = [];
     Object.keys(by).forEach(function (k) { prices.push(by[k].preco); });
     var lo = Math.min.apply(null, prices), hi = Math.max.apply(null, prices);
-    var h = '<div class="matrix"><div class="h"></div>';
+    var h = '<div class="matrix" style="grid-template-columns:auto repeat(' + j.voltas.length + ',1fr)"><div class="h"></div>';
     j.voltas.forEach(function (v) { h += '<div class="h">Volta<br>' + esc(dmy(v)) + "</div>"; });
     j.idas.forEach(function (i) {
       h += '<div class="h r">Ida<br>' + esc(dmy(i)) + "</div>";
