@@ -360,9 +360,8 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     .then(function (d) { state.data = d; init(); })
     .catch(function () { state.data = null; init(); });
 
-  function init() {
+  function setTitulo() {
     var d = state.data;
-    if (!d) { $("#upd").textContent = "Sem dados ainda"; $("#dot").className = "dot warn"; }
     if (d && d.janela) {
       var i = d.janela.idas, v = d.janela.voltas;
       var a = i[0], b = v[v.length - 1];
@@ -370,7 +369,17 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
       var span = Math.round((new Date(b) - new Date(a)) / 864e5);
       $("#titulo").textContent = (span <= 7 ? "Semana de " : "Período de ") + (a.slice(0, 7) === b.slice(0, 7) ? da + " a " + db + " de " + mb : da + " de " + ma + " a " + db + " de " + mb);
     }
+  }
+
+  function init() {
+    var d = state.data;
+    if (!d) { $("#upd").textContent = "Sem dados ainda"; $("#dot").className = "dot warn"; }
+    setTitulo();
     initCfg();
+    var loadedAt = Date.now();
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden && Date.now() - loadedAt > 120000 && !(window.__dirty && window.__dirty())) location.reload();
+    });
     document.querySelectorAll("#range button").forEach(function (b) {
       b.addEventListener("click", function () {
         state.range = b.dataset.v;
@@ -392,6 +401,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
   }
 
   function render() {
+    setTitulo();
     var d = state.data, app = $("#app");
     if (!d || !d.linhas || !d.linhas.length) {
       app.innerHTML = '<div class="card empty">Ainda não há consultas para mostrar.<br>Assim que a próxima busca automática rodar, os preços aparecem aqui.</div>';
@@ -714,6 +724,21 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     });
     paint();
     if (waiting) startPoll();
+    window.__dirty = function () { return !same() || !cal.hidden; };
+
+    // adota a busca fixada em qualquer aparelho: le o config.json do repositorio
+    fetch("https://raw.githubusercontent.com/" + REPO + "/main/" + CFG + "?t=" + Date.now(), { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (c) {
+        if (!c || !c.idas || !c.voltas || !c.idas.length || !c.voltas.length) return;
+        var cfg = { idas: c.idas.slice().sort(), voltas: c.voltas.slice().sort() };
+        if (pd && !sameWin(cfg, pd)) return;   // fixacao local mais recente ainda nao chegou ao GitHub
+        if (sameWin(cfg, j)) { if (waiting) { waiting = false; pendSet(null); cur = cfg; draft = { idas: cfg.idas.slice(), voltas: cfg.voltas.slice() }; paint(); } return; }
+        if (same() && cal.hidden && !sameWin(cfg, cur)) {
+          cur = cfg; draft = { idas: cfg.idas.slice(), voltas: cfg.voltas.slice() }; waiting = true; paint(); startPoll();
+        } else if (same() && !waiting) { waiting = true; paint(); startPoll(); }
+      })
+      .catch(function () {});
   }
 
   function drawDonut(by, avg) {
