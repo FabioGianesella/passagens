@@ -1,7 +1,7 @@
 name: Alerta de passagens
 on:
   schedule:
-    - cron: "0 11 * * *"   # todo dia às 08h (Brasília)
+    - cron: "0 11,23 * * *"   # todo dia às 08h e 20h (Brasília)
   workflow_dispatch:
 permissions:
   contents: write
