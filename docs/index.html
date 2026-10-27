@@ -594,7 +594,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
         : "<span><b>" + n + (n === 1 ? " combinação válida" : " combinações válidas") + "</b> (mínimo de " + min + " noites)</span>";
       var st = $("#dState"), pend = !same();
       st.className = "dstate" + (pend ? " pend" : ""); st.lastChild.textContent = pend ? "Alterações não fixadas" : "Fixado";
-      $("#dSave").disabled = !(n > 0) || !pend; $("#dReset").disabled = !pend;
+      $("#dSave").disabled = !(n > 0);
       if (!(n > 0)) say("Escolha uma ida e uma volta com " + min + " noites ou mais.", "err");
       else if (!pend) say(""); else say("Alterações ainda não fixadas.");
       connPaint();
@@ -651,7 +651,9 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     });
     document.addEventListener("click", function (e) { if (!cal.hidden && !e.target.closest(".dpick")) closeCal(); });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !cal.hidden) { closeCal(); btn.focus(); } });
-    $("#dReset").addEventListener("click", function () { draft = { idas: cur.idas.slice(), voltas: cur.voltas.slice() }; pick = { ida: null, volta: null }; closeCal(); paint(); say("Alterações descartadas. Voltou para as datas fixadas.", "ok"); });
+    $("#dReset").addEventListener("click", function () {
+      if (same()) { closeCal(); say("Não há alterações para descartar.", ""); return; }
+      draft = { idas: cur.idas.slice(), voltas: cur.voltas.slice() }; pick = { ida: null, volta: null }; closeCal(); paint(); say("Alterações descartadas. Voltou para as datas fixadas.", "ok"); });
 
     function connPaint() {
       $("#dConn").innerHTML = tokGet()
@@ -664,6 +666,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
 
     // salvar no repositorio
     $("#dSave").addEventListener("click", function () {
+      if (same()) { closeCal(); say("Estas datas já estão fixadas. Escolha outras datas para alterar.", ""); return; }
       var tok = tokGet();
       if (!tok) { say("Conecte o GitHub em Configurações para fixar as datas.", "err"); openCfg(); return; }
       var b = $("#dSave"); b.disabled = true; say("Salvando…");
