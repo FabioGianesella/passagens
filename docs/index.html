@@ -125,6 +125,12 @@ section{margin-top:16px}
 .row .r{display:flex;align-items:center;gap:10px}
 .row .go{color:var(--muted);font-size:20px}
 
+.legs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+.leg{background:var(--chip);border-radius:16px;padding:12px 14px;display:grid;gap:1px}
+.leg .tag{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--accent)}
+.leg b{font-size:17px;font-weight:600;letter-spacing:-.02em}
+.leg span:last-child{font-size:13px;color:var(--muted)}
+.total{color:var(--muted);font-size:13px;margin-top:12px}
 footer{margin-top:36px;color:var(--muted);font-size:13px;text-align:center;line-height:1.6}
 
 @media (max-width:760px){
@@ -152,7 +158,7 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;text-align:center;line-
   <header>
     <div class="eyebrow" id="rota">São Paulo → Aracaju</div>
     <h1 id="titulo">Semana de 23 a 28 de novembro</h1>
-    <p>Os menores preços de ida e volta, atualizados duas vezes por dia.</p>
+    <p>Preços totais de ida e volta, atualizados duas vezes por dia.</p>
   </header>
 
   <div id="app"></div>
@@ -171,6 +177,12 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;text-align:center;line-
   var MES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
   var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); };
   var safeUrl = function (u) { return /^https:\/\/www\.google\.com\//.test(u || "") ? u : ""; };
+  var noites = function (a, b) { return Math.round((new Date(b) - new Date(a)) / 864e5); };
+  var dest = function () { return (state.data && state.data.rota && state.data.rota.destino) || "AJU"; };
+  var legs = function (r) {
+    return '<div class="legs"><div class="leg"><span class="tag">Ida</span><b>' + esc(dmy(r.ida)) + "</b><span>" + esc(r.origem) + " → " + esc(dest()) + (r.cia ? " · " + esc(r.cia) : "") +
+      '</span></div><div class="leg"><span class="tag">Volta</span><b>' + esc(dmy(r.volta)) + "</b><span>" + esc(dest()) + " → São Paulo</span></div></div>";
+  };
   var escalas = function (n) { return n === 0 ? "Direto" : n + (n === 1 ? " escala" : " escalas"); };
 
   var state = { range: "30", direct: "all", data: null };
@@ -239,29 +251,29 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;text-align:center;line-
     }
     if (teto && best.preco <= teto) chips += '<span class="chip good">Abaixo de ' + brl(teto) + "</span>";
     if (best.preco <= record.preco) chips += '<span class="chip good">Menor preço já visto</span>';
-    chips += '<span class="chip">' + esc(escalas(best.escalas)) + "</span>";
+    chips += '<span class="chip">' + esc(escalas(best.escalas)) + " na ida</span>";
     var link = safeUrl(best.link);
 
     var html = "";
     html += '<section class="grid g-hero fade">';
-    html += '<div class="card"><div class="label">Melhor preço agora</div><div class="big">' + brl(best.preco) + "</div>";
-    html += '<div class="sub">' + esc(dmy(best.ida)) + " → " + esc(dmy(best.volta)) + " · " + esc(best.origem) + " · " + esc(best.cia) + "</div>";
+    html += '<div class="card"><div class="label">Melhor preço agora · total ida e volta</div><div class="big">' + brl(best.preco) + "</div>";
+    html += legs(best) + '<div class="total">' + noites(best.ida, best.volta) + " noites em Aracaju · preço total, ida e volta</div>";
     html += '<div class="chips">' + chips + "</div>";
     if (link) html += '<a class="btn" href="' + esc(link) + '" target="_blank" rel="noopener">Ver no Google Flights ↗</a>';
     html += "</div>";
     html += '<div class="stack">';
-    html += '<div class="card"><div class="label">Menor preço já visto</div><div class="mid">' + brl(record.preco) + '</div><div class="sub">' + esc(dm(record.ida)) + " → " + esc(dm(record.volta)) + " · visto em " + esc(dm(record.consulta)) + "</div></div>";
+    html += '<div class="card"><div class="label">Menor preço já visto · ida e volta</div><div class="mid">' + brl(record.preco) + '</div><div class="sub">' + "ida " + esc(dm(record.ida)) + " · volta " + esc(dm(record.volta)) + " · visto em " + esc(dm(record.consulta)) + "</div></div>";
     html += '<div class="card"><div class="label">Média dos últimos 30 dias</div><div class="mid">' + (r30.length ? brl(avg) : "—") + '</div><div class="sub">' + r30.length + " consultas em " + nDias + (nDias === 1 ? " dia" : " dias") + "</div></div>";
     html += "</div></section>";
 
-    html += '<section class="card fade"><div class="head"><h2>Evolução do menor preço</h2>' +
+    html += '<section class="card fade"><div class="head"><h2>Evolução do menor preço (ida e volta)</h2>' +
       '<div class="seg" id="segRange"><button data-v="7" aria-pressed="false">7 dias</button><button data-v="30" aria-pressed="true">30 dias</button><button data-v="all" aria-pressed="false">Tudo</button></div></div>' +
       '<div id="chart"></div></section>';
 
-    html += '<section class="card fade"><div class="head"><h2>Por combinação de datas</h2></div><div id="matrix"></div>' +
-      '<p class="hint">Último menor preço encontrado para cada par de ida e volta. O contorno azul marca a melhor opção.</p></section>';
+    html += '<section class="card fade"><div class="head"><h2>Por combinação de ida e volta</h2></div><div id="matrix"></div>' +
+      '<p class="hint">Preço total de ida e volta para cada par de datas. Linhas são os dias de ida; colunas, os dias de volta. O contorno azul marca a melhor opção.</p></section>';
 
-    html += '<section class="card fade"><div class="head"><h2>Melhores opções</h2>' +
+    html += '<section class="card fade"><div class="head"><h2>Melhores opções (ida e volta)</h2>' +
       '<div class="seg" id="segDir"><button data-v="all" aria-pressed="true">Todas</button><button data-v="direct" aria-pressed="false">Diretos</button></div></div>' +
       '<div class="list" id="list"></div></section>';
 
@@ -303,7 +315,7 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;text-align:center;line-
         var t = hi === lo ? 1 : (hi - c.preco) / (hi - lo);
         var cls = c === best ? " best" : "";
         h += '<div class="cell' + cls + '" style="--i:' + Math.round(10 + t * 38) + '" title="Consultado em ' + esc(dm(c.consulta)) + '">' + brl(c.preco) +
-          "<small>" + esc(c.origem) + " · " + esc(escalas(c.escalas)) + "</small></div>";
+          "<small>" + esc(c.origem) + " · " + esc(escalas(c.escalas)) + " na ida</small><small>" + nights + (nights === 1 ? " noite" : " noites") + "</small></div>";
       });
     });
     $("#matrix").innerHTML = h + "</div>";
@@ -315,9 +327,9 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;text-align:center;line-
     if (!items.length) { $("#list").innerHTML = '<div class="empty">Nenhuma opção direta encontrada ainda.</div>'; return; }
     $("#list").innerHTML = items.map(function (r) {
       var u = safeUrl(r.link), tag = u ? "a" : "div", href = u ? ' href="' + esc(u) + '" target="_blank" rel="noopener"' : "";
-      return "<" + tag + ' class="row"' + href + '><div><div class="p">' + brl(r.preco) + '</div><div class="d">' + esc(dmy(r.ida)) + " → " + esc(dmy(r.volta)) +
-        '</div><div class="m">' + esc(r.origem) + " · " + esc(r.cia) + " · consultado em " + esc(dm(r.consulta)) + '</div></div>' +
-        '<div class="r"><span class="chip ' + (r.escalas === 0 ? "good" : "") + '">' + esc(escalas(r.escalas)) + '</span>' + (u ? '<span class="go">›</span>' : "") + "</div></" + tag + ">";
+      return "<" + tag + ' class="row"' + href + '><div><div class="p">' + brl(r.preco) + '</div><div class="d">Ida ' + esc(dmy(r.ida)) + " · Volta " + esc(dmy(r.volta)) +
+        '</div><div class="m">' + esc(r.origem) + " → " + esc(dest()) + " → São Paulo · " + esc(r.cia) + " · " + noites(r.ida, r.volta) + " noites · consultado em " + esc(dm(r.consulta)) + '</div></div>' +
+        '<div class="r"><span class="chip ' + (r.escalas === 0 ? "good" : "") + '">' + esc(escalas(r.escalas)) + ' na ida</span>' + (u ? '<span class="go">›</span>' : "") + "</div></" + tag + ">";
     }).join("");
   }
 
