@@ -199,6 +199,33 @@ dialog.cfg::backdrop{background:rgba(10,15,25,.45);-webkit-backdrop-filter:blur(
 .gstat{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
 .gstat i{width:8px;height:8px;border-radius:50%;background:var(--warn)} .gstat.on i{background:var(--good)}
 .tbtn{width:40px;height:40px}
+/* escolha de datas */
+.dval{font-size:26px;font-weight:600;letter-spacing:-.04em;margin-top:10px;line-height:1.1}
+.dval small{display:block;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0;margin-top:2px}
+.dpick{position:relative;margin-top:16px}
+.dchoose{margin-top:0!important;border:0;cursor:pointer;font:inherit;font-weight:500;display:inline-flex;align-items:center;gap:10px}
+.cal{position:absolute;z-index:30;top:calc(100% + 10px);left:0;width:min(360px,calc(100vw - 56px));background:var(--solid);color:var(--text);border-radius:28px;padding:18px;
+  box-shadow:0 30px 80px rgba(20,30,50,.28),0 0 0 1px var(--line);--band:color-mix(in srgb,var(--blue) 20%,transparent)}
+.cal[hidden]{display:none}
+.calh{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:16px}
+.calh .ib{width:34px;height:34px;font-size:20px;line-height:1}
+.calh .ib[disabled]{opacity:.3;cursor:not-allowed}
+.calg{display:grid;grid-template-columns:repeat(7,1fr);row-gap:2px}
+.calg .wd{font-size:11px;font-weight:600;color:var(--muted);text-align:center;padding:4px 0}
+.day{height:40px;border:0;background:none;padding:0;position:relative;font:inherit;font-size:14px;color:var(--text);cursor:pointer}
+.day span{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;margin:1px auto;position:relative}
+.day:hover:not(.dis) span{background:var(--chip)}
+.day.mid{background:var(--band)}
+.day.start.hasend{background:linear-gradient(90deg,transparent 50%,var(--band) 50%)}
+.day.end{background:linear-gradient(90deg,var(--band) 50%,transparent 50%)}
+.day.start span,.day.end span{background:var(--ink)!important;color:var(--inkon);font-weight:600}
+.day.dis{opacity:.28;cursor:not-allowed}
+.day.today:not(.start):not(.end) span{box-shadow:inset 0 0 0 1.5px var(--blue)}
+.calf{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+.calhint{font-size:13px;color:var(--muted);margin-bottom:10px;min-height:20px}
+.calbt{display:flex;gap:8px;justify-content:flex-end}
+.calbt .btn{margin-top:0;padding:8px 18px;font-size:14px;border:0;cursor:pointer;font:inherit;font-weight:500}
+.calbt .pill{padding:8px 16px;font-size:14px}
 footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-height:1.6}
 
 @media (max-width:1100px){
@@ -526,17 +553,20 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
   var tokGet = function () { try { return localStorage.getItem("gh_tok") || ""; } catch (e) { return ""; } };
   var tokSet = function (v) { try { if (v) localStorage.setItem("gh_tok", v); else localStorage.removeItem("gh_tok"); } catch (e) {} };
 
+  var addDays = function (iso, n) { return new Date(new Date(iso + "T12:00:00").getTime() + n * 864e5).toISOString().slice(0, 10); };
+  var cap = function (t) { return t.charAt(0).toUpperCase() + t.slice(1); };
+  var CAL_ICO = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>';
+
   function datasHtml() {
-    var hoje = new Date(Date.now() - 3 * 36e5).toISOString().slice(0, 10);
     return '<section class="card a-datas fade" id="datas">' +
       '<div class="dtitle"><div><h2>Datas da busca</h2><p>Escolha quando você quer ir e voltar. A busca automática (08h e 20h) consulta somente estas datas.</p></div>' +
       '<span class="dstate" id="dState"><i></i><span>Fixado</span></span></div>' +
       '<div class="dgrid">' +
-      '<div class="dcol"><span class="dtag">Ida</span><div class="dttl">São Paulo → Aracaju</div><div class="dsub">Datas em que você pode embarcar</div><div class="dchips" id="dIda"></div>' +
-        '<div class="dadd"><input type="date" id="addIda" min="' + hoje + '" aria-label="Adicionar data de ida"><button type="button" class="pill" id="btnIda">Adicionar data</button></div></div>' +
-      '<div class="dcol"><span class="dtag">Volta</span><div class="dttl">Aracaju → São Paulo</div><div class="dsub">Datas em que você pode voltar</div><div class="dchips" id="dVolta"></div>' +
-        '<div class="dadd"><input type="date" id="addVolta" min="' + hoje + '" aria-label="Adicionar data de volta"><button type="button" class="pill" id="btnVolta">Adicionar data</button></div></div>' +
+        '<div class="dcol"><span class="dtag">Ida</span><div class="dttl">São Paulo → Aracaju</div><div class="dval" id="vIda"></div></div>' +
+        '<div class="dcol"><span class="dtag">Volta</span><div class="dttl">Aracaju → São Paulo</div><div class="dval" id="vVolta"></div></div>' +
       '</div>' +
+      '<div class="dpick"><button type="button" class="btn dchoose" id="dChoose" aria-haspopup="dialog" aria-expanded="false">' + CAL_ICO + '<span id="dChooseT">Escolher datas</span></button>' +
+        '<div class="cal" id="cal" role="dialog" aria-label="Escolher datas de ida e volta" hidden></div></div>' +
       '<div class="dsum" id="dInfo"></div>' +
       '<div class="dact"><button type="button" class="btn" id="dSave">Fixar buscas nestas datas</button><button type="button" class="pill" id="dReset">Descartar alterações</button><span class="msg" id="dMsg"></span></div>' +
       '<div class="dconn" id="dConn"></div></section>';
@@ -544,43 +574,82 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
 
   function initDatas() {
     var j = state.data.janela, min = j.min_noites || 0;
+    var hoje = new Date(Date.now() - 3 * 36e5).toISOString().slice(0, 10);
     var cur = { idas: j.idas.slice(), voltas: j.voltas.slice() }, draft = { idas: j.idas.slice(), voltas: j.voltas.slice() };
+    var pick = { ida: null, volta: null }, view = hoje.slice(0, 7);
     var cfgJson = function () { return JSON.stringify({ idas: draft.idas, voltas: draft.voltas }, null, 2) + "\n"; };
     var same = function () { return JSON.stringify(draft.idas) === JSON.stringify(cur.idas) && JSON.stringify(draft.voltas) === JSON.stringify(cur.voltas); };
     var pares = function () { var n = 0; draft.idas.forEach(function (i) { draft.voltas.forEach(function (v) { if (noites(i, v) >= min) n++; }); }); return n; };
     var say = function (t, cls) { var m = $("#dMsg"); m.textContent = t || ""; m.className = "msg" + (cls ? " " + cls : ""); };
+    var fmtList = function (a) { return a.length === 1 ? '<b>' + esc(dmy(a[0])) + "</b>" : '<b>' + a.map(function (x) { return esc(dm(x)); }).join(", ") + "</b><small>janela flexível</small>"; };
 
-    function chips(kind) {
-      return draft[kind].map(function (x) {
-        return '<span class="dchip">' + esc(dmy(x)) + '<button type="button" data-rm="' + kind + "|" + x + '" aria-label="Remover ' + esc(dm(x)) + '">×</button></span>';
-      }).join("") || '<span class="sub">Nenhuma data</span>';
-    }
     function paint() {
-      $("#dIda").innerHTML = chips("idas"); $("#dVolta").innerHTML = chips("voltas");
-      var tot = draft.idas.length * draft.voltas.length, n = pares(), ok = n > 0 && tot <= MAXC;
-      var lista = function (k) { return draft[k].map(function (x) { return dmy(x); }).join(", ") || "—"; };
-      $("#dInfo").innerHTML = "<span><b>Ida:</b> " + esc(lista("idas")) + "</span><span>·</span><span><b>Volta:</b> " + esc(lista("voltas")) + "</span><span>·</span><span><b>" + n + (n === 1 ? " combinação válida" : " combinações válidas") + "</b> (mínimo de " + min + " noites)</span>";
+      $("#vIda").innerHTML = fmtList(draft.idas); $("#vVolta").innerHTML = fmtList(draft.voltas);
+      var n = pares(), single = draft.idas.length === 1 && draft.voltas.length === 1;
+      $("#dChooseT").textContent = single ? dm(draft.idas[0]) + " → " + dm(draft.voltas[0]) + " · alterar datas" : "Escolher datas";
+      $("#dInfo").innerHTML = single
+        ? "<span><b>" + noites(draft.idas[0], draft.voltas[0]) + " noites</b> em Aracaju</span><span>·</span><span>preço total de ida e volta</span>"
+        : "<span><b>" + n + (n === 1 ? " combinação válida" : " combinações válidas") + "</b> (mínimo de " + min + " noites)</span>";
       var st = $("#dState"), pend = !same();
       st.className = "dstate" + (pend ? " pend" : ""); st.lastChild.textContent = pend ? "Alterações não fixadas" : "Fixado";
+      $("#dSave").disabled = !(n > 0) || !pend;
+      if (!(n > 0)) say("Escolha uma ida e uma volta com " + min + " noites ou mais.", "err");
+      else if (!pend) say(""); else say("Alterações ainda não fixadas.");
       connPaint();
-      $("#dSave").disabled = !ok || same();
-      if (!ok) say(tot > MAXC ? "No máximo " + MAXC + " combinações de datas." : "Escolha ao menos uma ida e uma volta com " + min + " noites ou mais.", "err");
-      else if (same()) say(""); else say("Alterações ainda não fixadas.");
     }
-    function add(kind, inputId) {
-      var v = $("#" + inputId).value; if (!v) return;
-      if (draft[kind].indexOf(v) < 0) draft[kind].push(v);
-      draft[kind].sort(); $("#" + inputId).value = ""; paint();
+
+    // ---------- calendario
+    var cal = $("#cal"), btn = $("#dChoose");
+    function calHtml() {
+      var y = parseInt(view.slice(0, 4), 10), m = parseInt(view.slice(5, 7), 10) - 1;
+      var first = new Date(Date.UTC(y, m, 1)), dow = first.getUTCDay(), dim = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+      var prevOk = view > hoje.slice(0, 7);
+      var step = !pick.ida ? 0 : !pick.volta ? 1 : 2;
+      var hint = step === 0 ? "1. Toque na data de ida" : step === 1 ? "2. Agora toque na data de volta (mínimo de " + min + " noites)" :
+        "Ida " + dmy(pick.ida) + " · Volta " + dmy(pick.volta) + " · " + noites(pick.ida, pick.volta) + " noites";
+      var h = '<div class="calh"><button type="button" class="ib tbtn" data-nav="-1" aria-label="Mês anterior"' + (prevOk ? "" : " disabled") + '>‹</button>' +
+        '<b>' + cap(MES[m]) + " " + y + '</b><button type="button" class="ib tbtn" data-nav="1" aria-label="Próximo mês">›</button></div>' +
+        '<div class="calg">' + ["D", "S", "T", "Q", "Q", "S", "S"].map(function (w) { return '<div class="wd">' + w + "</div>"; }).join("");
+      for (var k = 0; k < dow; k++) h += "<div></div>";
+      for (var d = 1; d <= dim; d++) {
+        var iso = view + "-" + (d < 10 ? "0" : "") + d, cls = "day", dis = iso < hoje;
+        if (step === 1 && iso > pick.ida && noites(pick.ida, iso) < min) dis = true;
+        if (pick.ida && iso === pick.ida) cls += " start" + (pick.volta ? " hasend" : "");
+        if (pick.volta && iso === pick.volta) cls += " end";
+        if (pick.ida && pick.volta && iso > pick.ida && iso < pick.volta) cls += " mid";
+        if (iso === hoje) cls += " today";
+        if (dis) cls += " dis";
+        h += '<button type="button" class="' + cls + '" data-d="' + iso + '"' + (dis ? " disabled" : "") + '><span>' + d + "</span></button>";
+      }
+      h += '</div><div class="calf"><div class="calhint">' + esc(hint) + '</div><div class="calbt"><button type="button" class="pill" data-act="clear">Limpar</button><button type="button" class="btn" data-act="ok">Concluir</button></div></div>';
+      cal.innerHTML = h;
     }
-    $("#btnIda").addEventListener("click", function () { add("idas", "addIda"); });
-    $("#btnVolta").addEventListener("click", function () { add("voltas", "addVolta"); });
-    $("#addIda").addEventListener("keydown", function (e) { if (e.key === "Enter") add("idas", "addIda"); });
-    $("#addVolta").addEventListener("keydown", function (e) { if (e.key === "Enter") add("voltas", "addVolta"); });
-    $("#datas").addEventListener("click", function (e) {
-      var b = e.target.closest("button[data-rm]"); if (!b) return;
-      var p = b.dataset.rm.split("|"); draft[p[0]] = draft[p[0]].filter(function (x) { return x !== p[1]; }); paint();
+    function openCal() {
+      pick = draft.idas.length === 1 && draft.voltas.length === 1 ? { ida: draft.idas[0], volta: draft.voltas[0] } : { ida: null, volta: null };
+      view = (pick.ida && pick.ida >= hoje ? pick.ida : hoje).slice(0, 7);
+      calHtml(); cal.hidden = false; btn.setAttribute("aria-expanded", "true");
+    }
+    function closeCal() { cal.hidden = true; btn.setAttribute("aria-expanded", "false"); }
+    btn.addEventListener("click", function (e) { e.stopPropagation(); if (cal.hidden) openCal(); else closeCal(); });
+    cal.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var nav = e.target.closest("[data-nav]"), day = e.target.closest("[data-d]"), act = e.target.closest("[data-act]");
+      if (nav && !nav.disabled) {
+        var y = parseInt(view.slice(0, 4), 10), m = parseInt(view.slice(5, 7), 10) - 1 + parseInt(nav.dataset.nav, 10);
+        var dt = new Date(Date.UTC(y, m, 1)); view = dt.toISOString().slice(0, 7); calHtml();
+      } else if (day && !day.disabled) {
+        var iso = day.dataset.d;
+        if (!pick.ida || pick.volta || iso <= pick.ida) pick = { ida: iso, volta: null };
+        else { pick.volta = iso; draft = { idas: [pick.ida], voltas: [pick.volta] }; paint(); }
+        calHtml();
+      } else if (act) {
+        if (act.dataset.act === "clear") { pick = { ida: null, volta: null }; calHtml(); }
+        else closeCal();
+      }
     });
-    $("#dReset").addEventListener("click", function () { draft = { idas: cur.idas.slice(), voltas: cur.voltas.slice() }; paint(); });
+    document.addEventListener("click", function (e) { if (!cal.hidden && !e.target.closest(".dpick")) closeCal(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !cal.hidden) { closeCal(); btn.focus(); } });
+    $("#dReset").addEventListener("click", function () { draft = { idas: cur.idas.slice(), voltas: cur.voltas.slice() }; pick = { ida: null, volta: null }; closeCal(); paint(); });
 
     function connPaint() {
       $("#dConn").innerHTML = tokGet()
@@ -590,11 +659,12 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
     }
     window.__connPaint = connPaint;
     window.__cfgJson = cfgJson;
+
     // salvar no repositorio
     $("#dSave").addEventListener("click", function () {
       var tok = tokGet();
       if (!tok) { say("Conecte o GitHub em Configurações para fixar as datas.", "err"); openCfg(); return; }
-      var btn = $("#dSave"); btn.disabled = true; say("Salvando…");
+      var b = $("#dSave"); b.disabled = true; say("Salvando…");
       var url = "https://api.github.com/repos/" + REPO + "/contents/" + CFG;
       var H = { Authorization: "Bearer " + tok, Accept: "application/vnd.github+json" };
       fetch(url + "?ref=main&t=" + Date.now(), { headers: H, cache: "no-store" })
@@ -610,7 +680,7 @@ footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;line-
           paint(); say("Datas fixadas. A busca roda sozinha agora e o painel atualiza em poucos minutos.", "ok");
         })
         .catch(function (c) {
-          btn.disabled = false;
+          b.disabled = false;
           say(c === 401 || c === 403 || c === 404 ? "O GitHub recusou o token (erro " + c + "). Confira se ele tem permissão de escrita em Contents deste repositório." : "Não foi possível salvar. Tente de novo.", "err");
         });
     });
