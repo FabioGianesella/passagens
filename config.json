@@ -1,9 +1,30 @@
 {
-  "idas": [
-    "2026-11-25"
-  ],
-  "voltas": [
-    "2026-11-28"
-  ],
-  "teto": 1400
+  "trajetos": [
+    {
+      "id": "sp-aju",
+      "nome": "São Paulo → Aracaju",
+      "origens": "CGH,GRU,VCP",
+      "destino": "AJU",
+      "idas": [
+        "2026-11-25"
+      ],
+      "voltas": [
+        "2026-11-28"
+      ],
+      "teto": 1400
+    },
+    {
+      "id": "tmvsewphg",
+      "nome": "Férias",
+      "origens": "CGH,GRU,VCP",
+      "destino": "GIG",
+      "idas": [
+        "2026-11-27"
+      ],
+      "voltas": [
+        "2026-12-04"
+      ],
+      "teto": 1500
+    }
+  ]
 }
