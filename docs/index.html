@@ -286,6 +286,14 @@ h1{font-weight:600;letter-spacing:-.05em}
 .pill[aria-pressed="true"]{box-shadow:0 4px 16px rgba(0,0,0,.2)}
 .vo.top,.cell.sel{border-color:var(--accent);outline-color:var(--accent)}
 @media (max-width:640px){body{padding:12px 12px max(20px,env(safe-area-inset-bottom))}.top{border-radius:28px;top:8px}}
+.trs{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:-6px 0 22px}
+.trs .pill{max-width:240px;overflow:hidden;text-overflow:ellipsis;background:var(--nav)}
+.trs .pill[aria-pressed="true"]{background:var(--ink);color:var(--inkon)}
+.trs .trnew,.trs .tredit{border-style:dashed}
+.trmax{font-size:12px;color:var(--muted);align-self:center;padding:0 6px}
+.fl{display:block;font-size:13px;color:var(--muted);margin-top:12px}
+.fl input,.ghrow input{display:block;width:100%;margin-top:6px;border:1px solid var(--line);border-radius:999px;padding:12px 18px;background:var(--card);color:var(--text);font:inherit;font-size:16px;outline:none}
+.trprev{color:var(--text)!important;font-weight:500}
 </style>
 </head>
 <body>
@@ -312,11 +320,27 @@ h1{font-weight:600;letter-spacing:-.05em}
         </div>
         <div class="route"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 13.5L3 11l18-7-6 17-3.5-7.5z"/></svg><span id="rota">São Paulo → Aracaju → São Paulo</span></div>
       </header>
+      <div id="trbar"></div>
       <div id="app"></div>
       <footer id="foot"></footer>
     </main>
   </div>
 </div>
+
+<dialog class="cfg" id="trDlg" aria-labelledby="trT">
+  <div class="cfgb">
+    <div class="cfgh"><h2 id="trT">Novo trajeto</h2><button type="button" class="ib tbtn" id="trClose" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="cfgs">
+      <label class="fl">Origem<input id="trOrg" placeholder="Ex.: SAO ou CGH, GRU, VCP" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+      <label class="fl">Destino<input id="trDst" placeholder="Ex.: AJU" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+      <label class="fl">Nome do trajeto (opcional)<input id="trNome" maxlength="40" placeholder="Ex.: Viagem de Natal" autocomplete="off"></label>
+      <p id="trPrev" class="trprev"></p>
+      <p>Use o código de 3 letras do aeroporto. Atalhos: <b>SAO</b> (Congonhas, Guarulhos e Viracopos), <b>RIO</b> (Galeão e Santos Dumont) e <b>BHZ</b> (Confins e Pampulha). Até 3 origens e 1 destino. A ida é sempre da origem para o destino, e a volta faz o caminho inverso.</p>
+      <div class="ghrow"><button type="button" class="btn" id="trSave" style="margin-top:0">Criar trajeto</button><button type="button" class="pill" id="trDel">Remover trajeto</button></div>
+      <div class="msg" id="trMsg"></div>
+    </div>
+  </div>
+</dialog>
 
 <dialog class="cfg" id="cfg" aria-labelledby="cfgT">
   <div class="cfgb">
@@ -368,68 +392,141 @@ h1{font-weight:600;letter-spacing:-.05em}
   var dest = function () { return (state.data && state.data.rota && state.data.rota.destino) || "AJU"; };
   var legs = function (r) {
     return '<div class="legs"><div class="leg"><span class="tag">Ida</span><b>' + esc(dmy(r.ida)) + "</b><span>" + esc(r.origem) + " → " + esc(dest()) + (r.cia ? " · " + esc(r.cia) : "") +
-      '</span></div><div class="leg"><span class="tag">Volta</span><b>' + esc(dmy(r.volta)) + "</b><span>" + esc(dest()) + " → São Paulo</span></div></div>";
+      '</span></div><div class="leg"><span class="tag">Volta</span><b>' + esc(dmy(r.volta)) + "</b><span>" + esc(dest()) + " → " + esc(orgOf(curT())) + "</span></div></div>";
   };
   var escalas = function (n) { return n === 0 ? "Direto" : n + (n === 1 ? " escala" : " escalas"); };
 
-  var state = { tetoOv:null, tetoTs:0, range: "30", direct: "all", all: null, win: null, data: null, waiting: false, waitTs: 0, polling: false };
+  var state = { range: "30", direct: "all", all: null, trs: [], tid: "", wait: {}, data: null, polling: false };
+  var ID_PADRAO = "sp-aju", MAXT = 5;
   var sameWin = function (a, b) { return !!a && !!b && JSON.stringify(a.idas) === JSON.stringify(b.idas) && JSON.stringify(a.voltas) === JSON.stringify(b.voltas); };
-  var pendGet = function () { try { return JSON.parse(localStorage.getItem("pend") || "null"); } catch (e) { return null; } };
-  var pendSet = function (v) { try { if (v) localStorage.setItem("pend", JSON.stringify(v)); else localStorage.removeItem("pend"); } catch (e) {} };
-  var validWin = function (c) { return !!(c && c.idas && c.voltas && c.idas.length && c.voltas.length); };
+  var pendGet = function () { try { return JSON.parse(localStorage.getItem("pend2") || "null"); } catch (e) { return null; } };
+  var pendSet = function (v) { try { if (v) localStorage.setItem("pend2", JSON.stringify(v)); else localStorage.removeItem("pend2"); } catch (e) {} };
+  var clone = function (o) { return JSON.parse(JSON.stringify(o)); };
 
-  // dados completos (todo o historico) + janela escolhida => visao exibida
-  function tetoVal() { var t = state.tetoOv != null ? state.tetoOv : (state.data && state.data.teto) || 0; return t > 0 ? t : 0; }
-  function derive() {
-    var all = state.all;
-    if (!all) { state.data = null; return; }
-    var win = state.win || all.janela;
-    var rows = (all.linhas || []).filter(function (r) { return win.idas.indexOf(r.ida) >= 0 && win.voltas.indexOf(r.volta) >= 0; });
-    state.data = Object.assign({}, all, { janela: { idas: win.idas, voltas: win.voltas, min_noites: (all.janela && all.janela.min_noites) || 0 }, linhas: rows });
+  // ---- cidades / codigos de aeroporto
+  var CIDADE = { CGH:"São Paulo",GRU:"São Paulo",VCP:"São Paulo",GIG:"Rio de Janeiro",SDU:"Rio de Janeiro",CNF:"Belo Horizonte",PLU:"Belo Horizonte",
+    AJU:"Aracaju",SSA:"Salvador",REC:"Recife",FOR:"Fortaleza",NAT:"Natal",MCZ:"Maceió",BSB:"Brasília",POA:"Porto Alegre",CWB:"Curitiba",
+    FLN:"Florianópolis",VIX:"Vitória",GYN:"Goiânia",BEL:"Belém",MAO:"Manaus",CGB:"Cuiabá",SLZ:"São Luís",THE:"Teresina",JPA:"João Pessoa",
+    NVT:"Navegantes",IGU:"Foz do Iguaçu",CGR:"Campo Grande",LDB:"Londrina",UDI:"Uberlândia",PMW:"Palmas",BVB:"Boa Vista",MCP:"Macapá",
+    PVH:"Porto Velho",RBR:"Rio Branco",JDO:"Juazeiro do Norte",IMP:"Imperatriz",MII:"Marília",SJP:"São José do Rio Preto",RAO:"Ribeirão Preto",
+    LIS:"Lisboa",OPO:"Porto",MIA:"Miami",JFK:"Nova York",EZE:"Buenos Aires",SCL:"Santiago",MAD:"Madri",CDG:"Paris",MCO:"Orlando" };
+  var GRUPOS = { SAO: ["CGH", "GRU", "VCP"], RIO: ["GIG", "SDU"], BHZ: ["CNF", "PLU"] };
+  function parseCods(txt, max) {
+    var out = [], bad = false;
+    String(txt || "").toUpperCase().split(/[\s,;]+/).forEach(function (x) {
+      if (!x) return;
+      (GRUPOS[x] || [x]).forEach(function (c) { if (!/^[A-Z]{3}$/.test(c)) bad = true; else if (out.indexOf(c) < 0) out.push(c); });
+    });
+    return bad || !out.length || out.length > max ? null : out;
   }
-  function isFresh(d) {
-    return !!(d && d.janela && sameWin(d.janela, state.win) && (!state.waitTs || Date.parse(d.atualizado) >= state.waitTs - 120000));
+  function cityOf(codes) {
+    var cs = codes.map(function (c) { return CIDADE[c] || c; }).filter(function (x, i, a) { return a.indexOf(x) === i; });
+    return cs.join(" / ");
+  }
+  var orgOf = function (T) { return cityOf(T.origens.split(",")); };
+  var dstOf = function (T) { return cityOf(T.destino.split(",")); };
+  var autoNome = function (T) { return orgOf(T) + " → " + dstOf(T); };
+  var curT = function () { for (var i = 0; i < state.trs.length; i++) if (state.trs[i].id === state.tid) return state.trs[i]; return state.trs[0] || null; };
+  var cfgSig = function (trs) { return JSON.stringify(trs.map(function (t) { return [t.id, t.nome, t.origens, t.destino, t.teto, t.idas, t.voltas]; })); };
+
+  // config.json (qualquer formato) -> lista de trajetos
+  function normalizeCfg(c) {
+    var arr = [];
+    if (c && Array.isArray(c.trajetos)) arr = c.trajetos;
+    else if (c && c.idas && c.voltas) arr = [{ id: ID_PADRAO, nome: "São Paulo → Aracaju", origens: "CGH,GRU,VCP", destino: "AJU", idas: c.idas, voltas: c.voltas, teto: c.teto }];
+    var out = [];
+    arr.slice(0, MAXT).forEach(function (t, i) {
+      if (!t || !t.idas || !t.voltas || !t.idas.length || !t.voltas.length || !t.origens || !t.destino) return;
+      var o = { id: String(t.id || "t" + (i + 1)), nome: String(t.nome || ""), origens: String(t.origens), destino: String(t.destino),
+        teto: Math.round(+t.teto) >= 100 ? Math.round(+t.teto) : 1500, idas: t.idas.slice().sort(), voltas: t.voltas.slice().sort() };
+      if (!o.nome) o.nome = autoNome(o);
+      out.push(o);
+    });
+    return out;
+  }
+  function trsFromData(d) {
+    if (d && Array.isArray(d.trajetos) && d.trajetos.length) return normalizeCfg({ trajetos: d.trajetos });
+    if (d && d.janela) return normalizeCfg({ idas: d.janela.idas, voltas: d.janela.voltas, teto: d.teto });
+    return [];
+  }
+  var tetoVal = function () { var T = curT(); return T && T.teto > 0 ? T.teto : 0; };
+
+  // todo o historico + trajeto/datas escolhidos => visao exibida
+  function derive() {
+    var all = state.all, T = curT();
+    if (!all || !T) { state.data = null; return; }
+    var rows = (all.linhas || []).filter(function (r) { return (r.trajeto || ID_PADRAO) === T.id && T.idas.indexOf(r.ida) >= 0 && T.voltas.indexOf(r.volta) >= 0; });
+    var voos = {};
+    Object.keys(all.voos || {}).forEach(function (k) {
+      var p = k.split("|");
+      if (p.length === 3) { if (p[0] === T.id) voos[p[1] + "|" + p[2]] = all.voos[k]; } else if (T.id === ID_PADRAO) voos[k] = all.voos[k];
+    });
+    state.data = Object.assign({}, all, { rota: { origens: T.origens, destino: T.destino },
+      janela: { idas: T.idas, voltas: T.voltas, min_noites: all.min_noites || (all.janela && all.janela.min_noites) || 2 }, teto: T.teto, linhas: rows, voos: voos });
+  }
+  function trInData(d, id) {
+    var l = (d && d.trajetos) || null;
+    if (l) { for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; }
+    return d && d.janela && id === ID_PADRAO ? { idas: d.janela.idas, voltas: d.janela.voltas } : null;
+  }
+  function isFreshFor(d, T, ts) {
+    var x = d && T && trInData(d, T.id);
+    return !!(x && sameWin(x, T) && (!ts || Date.parse(d.atualizado) >= ts - 120000));
+  }
+  var waitIds = function () { return Object.keys(state.wait); };
+  var isWaiting = function () { var T = curT(); return !!(T && state.wait[T.id] !== undefined); };
+  function pendSave(fresh) {
+    var pd = pendGet();
+    if (fresh) pendSet({ trs: state.trs, wait: state.wait, ts: Date.now(), keep: Date.now() + 5 * 60e3 });
+    else if (waitIds().length) pendSet({ trs: state.trs, wait: state.wait, ts: pd ? pd.ts : Date.now(), keep: pd ? pd.keep : 0 });
+    else if (pd && pd.keep > Date.now()) pendSet({ trs: state.trs, wait: {}, ts: pd.ts, keep: pd.keep });
+    else pendSet(null);
   }
   function applyAll(d) {
     state.all = d;
-    if (state.waiting && isFresh(d)) { state.waiting = false; state.waitTs = 0; pendSet(null); }
-    derive(); render();
+    state.trs.forEach(function (T) { if (state.wait[T.id] !== undefined && isFreshFor(d, T, state.wait[T.id])) delete state.wait[T.id]; });
+    pendSave(); derive(); render();
   }
-  function setWindow(win, ts) {
-    state.win = { idas: win.idas.slice(), voltas: win.voltas.slice() };
-    state.waiting = true; state.waitTs = ts || 0;
-    derive(); render(); startPoll();
+  // depois de salvar no GitHub: guarda a nova lista e fica consultando ate os dados novos chegarem
+  function afterSave(trs, ids, ts) {
+    state.trs = trs;
+    ids.forEach(function (id) { state.wait[id] = ts; });
+    if (!curT() || curT().id !== state.tid) state.tid = trs[0] ? trs[0].id : "";
+    pendSave(true); derive(); render(); startPoll();
   }
   function startPoll() {
     if (state.polling) return;
     state.polling = true;
     var t0 = Date.now();
     (function tick() {
-      if (!state.waiting) { state.polling = false; return; }
+      if (!waitIds().length) { state.polling = false; return; }
       fetch("https://raw.githubusercontent.com/FabioGianesella/passagens/main/docs/data.json?t=" + Date.now(), { cache: "no-store" })
         .then(function (r) { if (!r.ok) throw 0; return r.json(); })
         .catch(function () { return fetch("data.json?t=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }); })
         .then(function (d) {
-          if (isFresh(d)) { state.polling = false; applyAll(d); }
-          else if (Date.now() - t0 > 15 * 60e3) { state.polling = false; var m = $("#dMsg"); if (m) { m.textContent = "A atualização está demorando. Recarregue a página em alguns minutos."; m.className = "msg err"; } }
+          var any = state.trs.some(function (T) { return state.wait[T.id] !== undefined && isFreshFor(d, T, state.wait[T.id]); });
+          if (any) applyAll(d);
+          if (!waitIds().length) { state.polling = false; return; }
+          if (Date.now() - t0 > 15 * 60e3) { state.polling = false; var m = $("#dMsg"); if (m) { m.textContent = "A atualização está demorando. Recarregue a página em alguns minutos."; m.className = "msg err"; } }
           else setTimeout(tick, 5000);
         })
         .catch(function () { setTimeout(tick, 5000); });
     })();
   }
-  function adoptRemote(pd) {
+  // outro aparelho pode ter mudado os trajetos: adota o config.json do repositorio
+  function adoptRemote() {
     fetch("https://raw.githubusercontent.com/FabioGianesella/passagens/main/config.json?t=" + Date.now(), { cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (c) {
-        if (c && +c.teto > 0 && +c.teto !== state.tetoOv && Date.now() - state.tetoTs > 5 * 60e3 && !(window.__dirty && window.__dirty())) {
-          state.tetoOv = Math.round(+c.teto); render();
-        }
-        if (!validWin(c)) return;
-        var cfg = { idas: c.idas.slice().sort(), voltas: c.voltas.slice().sort() };
-        if (sameWin(cfg, state.win)) return;
-        if (pd && !sameWin(cfg, pd)) return;                       // fixacao local mais recente ainda nao chegou ao GitHub
+        var trs = normalizeCfg(c);
+        if (!trs.length || cfgSig(trs) === cfgSig(state.trs)) return;
+        var pd = pendGet();
+        if (pd && cfgSig(pd.trs) !== cfgSig(trs)) return;          // alteracao local mais recente ainda nao chegou ao GitHub
         if (window.__dirty && window.__dirty()) return;            // nao interrompe uma escolha em andamento
-        setWindow(cfg, 0);
+        state.trs = trs;
+        trs.forEach(function (T) { if (!isFreshFor(state.all, T, 0) && state.wait[T.id] === undefined) state.wait[T.id] = 0; });
+        if (!curT() || curT().id !== state.tid) state.tid = trs[0].id;
+        derive(); render(); if (waitIds().length) startPoll();
       })
       .catch(function () {});
   }
@@ -437,13 +534,18 @@ h1{font-weight:600;letter-spacing:-.05em}
   fetch("data.json?" + Date.now(), { cache: "no-store" })
     .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(function (d) {
-      state.all = d; state.win = d.janela;
+      state.all = d; state.trs = trsFromData(d);
       var pd = pendGet();
-      if (pd && (sameWin(pd, d.janela) || Date.now() - pd.ts > 30 * 60e3)) { pendSet(null); pd = null; }
-      if (pd) { state.win = { idas: pd.idas, voltas: pd.voltas }; state.waiting = true; state.waitTs = pd.ts; }
+      if (pd && Date.now() - pd.ts < 30 * 60e3 && pd.trs && pd.trs.length) {
+        state.trs = pd.trs; state.wait = pd.wait || {};
+        state.trs.forEach(function (T) { if (state.wait[T.id] !== undefined && isFreshFor(d, T, state.wait[T.id])) delete state.wait[T.id]; });
+      }
+      pendSave();
+      try { state.tid = localStorage.getItem("tid") || ""; } catch (e) {}
+      if (!curT()) state.tid = state.trs[0] ? state.trs[0].id : "";
       derive(); init();
-      if (state.waiting) startPoll();
-      adoptRemote(pd);
+      if (waitIds().length) startPoll();
+      adoptRemote();
     })
     .catch(function () { state.all = null; state.data = null; init(); });
 
@@ -462,7 +564,7 @@ h1{font-weight:600;letter-spacing:-.05em}
     var d = state.data;
     if (!d) { $("#upd").textContent = "Sem dados ainda"; $("#dot").className = "dot warn"; }
     setTitulo();
-    initCfg();
+    initCfg(); initTrajetos();
     var loadedAt = Date.now();
     document.addEventListener("visibilitychange", function () {
       if (!document.hidden && Date.now() - loadedAt > 120000 && !(window.__dirty && window.__dirty())) location.reload();
@@ -478,13 +580,30 @@ h1{font-weight:600;letter-spacing:-.05em}
     return "amanhã às 8h";
   }
 
+  function renderTrBar() {
+    var el = $("#trbar"), T = curT();
+    if (!el) return;
+    if (!T) { el.innerHTML = ""; return; }
+    el.innerHTML = '<div class="trs" role="group" aria-label="Trajetos monitorados">' + state.trs.map(function (t) {
+      return '<button type="button" class="pill" data-tr="' + esc(t.id) + '" aria-pressed="' + (t.id === T.id) + '" title="' + esc(t.nome) + '">' + esc(t.nome) + "</button>";
+    }).join("") + '<button type="button" class="pill tredit" data-act="edit">Editar trajeto</button>' +
+      (state.trs.length < MAXT ? '<button type="button" class="pill trnew" data-act="new">+ Novo trajeto</button>' : '<span class="trmax">Máximo de ' + MAXT + " trajetos</span>") + "</div>";
+  }
+  function cobertura() {
+    var min = (state.all && state.all.min_noites) || 2, tot = 0;
+    state.trs.forEach(function (t) { t.idas.forEach(function (i) { t.voltas.forEach(function (v) { if (noites(i, v) >= min) tot++; }); }); });
+    var dias = Math.ceil(tot / 8);
+    return "Monitorando " + state.trs.length + (state.trs.length === 1 ? " trajeto" : " trajetos") + " e " + tot + (tot === 1 ? " combinação de datas" : " combinações de datas") + ". " +
+      (tot <= 4 ? "Todas são consultadas a cada busca (8h e 20h)." : tot <= 8 ? "Cada combinação é consultada pelo menos uma vez por dia." : "A cota gratuita de buscas é dividida entre elas: cada combinação é consultada a cada ~" + dias + " dias.") + "<br>";
+  }
   function render() {
-    setTitulo();
+    setTitulo(); renderTrBar();
+    var Tn = curT(); if (Tn) $("#rota").textContent = orgOf(Tn) + " → " + dstOf(Tn) + " → " + orgOf(Tn);
     var d = state.data, app = $("#app");
     if (!d || !d.linhas || !d.linhas.length) {
       if (d && d.janela) {
         var a0 = d.janela.idas[0], b0 = d.janela.voltas[d.janela.voltas.length - 1];
-        app.innerHTML = '<div class="board">' + datasHtml() + (state.waiting
+        app.innerHTML = '<div class="board">' + datasHtml() + (isWaiting()
           ? '<section class="card a-wait"><div class="empty"><span class="spin"></span>Buscando os preços de ' + esc(dm(a0)) + " a " + esc(dm(b0)) + '…<br>Os resultados aparecem aqui assim que a consulta terminar (cerca de 1 minuto).</div></section>'
           : '<section class="card a-wait"><div class="empty">Ainda não há preços para estas datas.<br>A próxima busca automática vai trazê-los.</div></section>') + "</div>";
         initDatas();
@@ -531,7 +650,7 @@ h1{font-weight:600;letter-spacing:-.05em}
       var link = safeUrl(sel.link);
       var h = '<div class="label">' + (isBest ? "Melhor preço agora" : "Combinação selecionada") + " · total ida e volta" +
         (isBest ? "" : ' <button class="back" id="backBest" type="button">Voltar ao melhor preço</button>') + '</div><div class="big">' + brl(sel.preco) + "</div>";
-      h += legs(sel) + '<div class="total">' + noites(sel.ida, sel.volta) + " noites em Aracaju · preço total, ida e volta</div>";
+      h += legs(sel) + '<div class="total">' + noites(sel.ida, sel.volta) + " noites em " + esc(dstOf(curT())) + " · preço total, ida e volta</div>";
       h += '<div class="chips" style="margin-top:14px">' + chips + "</div>";
       if (link) h += '<a class="btn" href="' + esc(link) + '" target="_blank" rel="noopener">Ver no Google Flights ' + ARW.replace("<svg", '<svg width="14" height="14"') + "</a>";
       return h;
@@ -593,7 +712,7 @@ h1{font-weight:600;letter-spacing:-.05em}
     drawChart();
     initTeto();
 
-    $("#foot").innerHTML = "Busca automática às 8h e 20h (próxima " + nextRun() + ").<br>Preços de ida e volta em reais · Fonte: Google Flights via SerpAPI.";
+    $("#foot").innerHTML = cobertura() + "Busca automática às 8h e 20h (próxima " + nextRun() + ").<br>Preços de ida e volta em reais · Fonte: Google Flights via SerpAPI.";
   }
 
   function hhmm(t) { return (t || "").slice(11, 16); }
@@ -622,37 +741,19 @@ h1{font-weight:600;letter-spacing:-.05em}
     var inp = $("#tetoIn"), btn = $("#tetoSave"), msg = $("#tetoMsg");
     if (!inp) return;
     var say = function (t, c) { msg.textContent = t; msg.className = "msg" + (c ? " " + c : ""); };
-    var base = function () { return state.win || (state.data && state.data.janela); };
     btn.addEventListener("click", function () {
       var v = Math.round(parseFloat(inp.value));
       if (!(v >= 100 && v <= 50000)) { say("Informe um valor entre R$ 100 e R$ 50.000.", "err"); return; }
       if (v === tetoVal()) { say("Este já é o teto atual.", ""); return; }
-      var tok = tokGet();
-      if (!tok) { say("Conecte o GitHub em Configurações para salvar.", "err"); openCfg(); return; }
+      if (!tokGet()) { say("Conecte o GitHub em Configurações para salvar.", "err"); openCfg(); return; }
       btn.disabled = true; say("Salvando…");
-      var url = "https://api.github.com/repos/" + REPO + "/contents/" + CFG;
-      var H = { Authorization: "Bearer " + tok, Accept: "application/vnd.github+json" };
-      fetch(url + "?ref=main&t=" + Date.now(), { headers: H, cache: "no-store" })
-        .then(function (r) { if (r.status === 404) return {}; if (!r.ok) throw r.status; return r.json(); })
-        .then(function (f) {
-          var c = {};
-          try { c = JSON.parse(decodeURIComponent(escape(atob((f.content || "").replace(/\s/g, ""))))); } catch (e) { c = {}; }
-          if (!c || !c.idas || !c.voltas) { var w = base(); c = { idas: w.idas.slice(), voltas: w.voltas.slice() }; }
-          c.teto = v;
-          var body = { message: "Altera teto do alerta pelo painel", content: btoa(JSON.stringify(c, null, 2) + "\n"), branch: "main" };
-          if (f && f.sha) body.sha = f.sha;
-          return fetch(url, { method: "PUT", headers: H, body: JSON.stringify(body) });
-        })
-        .then(function (r) {
-          if (!r.ok) throw r.status;
-          state.tetoOv = v; state.tetoTs = Date.now();
-          render();
+      var tid = curT().id;
+      saveCfg(function (trs) { trs.forEach(function (t) { if (t.id === tid) t.teto = v; }); return trs; }, "Altera teto do alerta pelo painel")
+        .then(function (trs) {
+          afterSave(trs, [], Date.now());
           var m = $("#tetoMsg"); if (m) { m.textContent = "Teto salvo: R$ " + v + ". Vale a partir da próxima busca."; m.className = "msg ok"; }
         })
-        .catch(function (c) {
-          btn.disabled = false;
-          say(c === 401 || c === 403 || c === 404 ? "O GitHub recusou o token (erro " + c + "). Confira a permissão de escrita em Contents." : "Não foi possível salvar. Tente de novo.", "err");
-        });
+        .catch(function (c) { btn.disabled = false; say(saveErr(c), "err"); });
     });
   }
 
@@ -688,6 +789,82 @@ h1{font-weight:600;letter-spacing:-.05em}
     if (window.__connPaint) window.__connPaint();
   }
   function openCfg() { var d = $("#cfg"); if (d.showModal) d.showModal(); else d.setAttribute("open", ""); ghPaint(); }
+  function initTrajetos() {
+    var dlg = $("#trDlg"), mode = "new", msg = $("#trMsg");
+    var say = function (t, c) { msg.textContent = t || ""; msg.className = "msg" + (c ? " " + c : ""); };
+    var todayIso = function () { return new Date(Date.now() - 3 * 36e5).toISOString().slice(0, 10); };
+    var show = function () { if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", ""); };
+    function prev() {
+      var o = parseCods($("#trOrg").value, 3), d = parseCods($("#trDst").value, 1), el = $("#trPrev");
+      el.textContent = (o ? "Origem: " + cityOf(o) + " (" + o.join(", ") + ")" : $("#trOrg").value.trim() ? "Origem inválida" : "") +
+        (o || d ? "  →  " : "") + (d ? "Destino: " + cityOf(d) + " (" + d.join(", ") + ")" : $("#trDst").value.trim() ? "Destino inválido" : "");
+    }
+    function open(m) {
+      mode = m; say("");
+      var T = curT();
+      $("#trT").textContent = m === "new" ? "Novo trajeto" : "Editar trajeto";
+      $("#trSave").textContent = m === "new" ? "Criar trajeto" : "Salvar alterações";
+      $("#trDel").style.display = m === "edit" && state.trs.length > 1 ? "" : "none";
+      $("#trOrg").value = m === "edit" && T ? T.origens.split(",").join(", ") : "";
+      $("#trDst").value = m === "edit" && T ? T.destino : "";
+      $("#trNome").value = m === "edit" && T ? T.nome : "";
+      prev(); show();
+    }
+    $("#trbar").addEventListener("click", function (e) {
+      var b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.tr) {
+        state.tid = b.dataset.tr; try { localStorage.setItem("tid", state.tid); } catch (x) {}
+        derive(); render();
+      } else if (b.dataset.act === "new") open("new");
+      else if (b.dataset.act === "edit") open("edit");
+    });
+    $("#trClose").addEventListener("click", function () { dlg.close(); });
+    dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
+    $("#trOrg").addEventListener("input", prev); $("#trDst").addEventListener("input", prev);
+    var newId = function () { return "t" + Date.now().toString(36); };
+    $("#trSave").addEventListener("click", function () {
+      var org = parseCods($("#trOrg").value, 3), dst = parseCods($("#trDst").value, 1), nome = $("#trNome").value.trim().slice(0, 40);
+      if (!org) { say("Origem inválida: use de 1 a 3 códigos de aeroporto (ex.: SAO, ou CGH, GRU, VCP).", "err"); return; }
+      if (!dst) { say("Destino inválido: use 1 código de aeroporto (ex.: AJU).", "err"); return; }
+      if (org.indexOf(dst[0]) >= 0) { say("Origem e destino não podem ser iguais.", "err"); return; }
+      if (!tokGet()) { say("Conecte o GitHub em Configurações para salvar.", "err"); return; }
+      var o = org.join(","), d = dst[0], b = $("#trSave"); b.disabled = true; say("Salvando…");
+      var ts = Date.now(), ids = [], tidNew = null;
+      var mut;
+      if (mode === "new") {
+        var T = { id: newId(), nome: nome || autoNome({ origens: o, destino: d }), origens: o, destino: d, teto: 1500, idas: [addDays(todayIso(), 30)], voltas: [addDays(todayIso(), 37)] };
+        ids = [T.id]; tidNew = T.id;
+        mut = function (trs) { if (trs.length >= MAXT) throw "max"; trs.push(T); return trs; };
+      } else {
+        var old = curT(), changed = o !== old.origens || d !== old.destino, oid = old.id;
+        var nid = changed ? newId() : oid;
+        if (changed) { ids = [nid]; tidNew = nid; } else tidNew = oid;
+        mut = function (trs) {
+          return trs.map(function (t) {
+            if (t.id !== oid) return t;
+            var n = clone(t); n.id = nid; n.origens = o; n.destino = d;
+            n.nome = nome || autoNome(n); return n;
+          });
+        };
+      }
+      saveCfg(mut, mode === "new" ? "Adiciona trajeto pelo painel" : "Edita trajeto pelo painel")
+        .then(function (trs) {
+          state.tid = tidNew; try { localStorage.setItem("tid", state.tid); } catch (x) {}
+          b.disabled = false; dlg.close(); afterSave(trs, ids, ts);
+        })
+        .catch(function (c) { b.disabled = false; say(c === "max" ? "Limite de " + MAXT + " trajetos atingido." : saveErr(c), "err"); });
+    });
+    $("#trDel").addEventListener("click", function () {
+      var T = curT(); if (!T || state.trs.length < 2) return;
+      if (!window.confirm("Remover o trajeto “" + T.nome + "”? Ele deixa de ser consultado e o histórico dele deixa de aparecer no painel.")) return;
+      if (!tokGet()) { say("Conecte o GitHub em Configurações para salvar.", "err"); return; }
+      var b = $("#trDel"); b.disabled = true; say("Removendo…");
+      saveCfg(function (trs) { var r = trs.filter(function (t) { return t.id !== T.id; }); if (!r.length) throw "ultimo"; return r; }, "Remove trajeto pelo painel")
+        .then(function (trs) { b.disabled = false; delete state.wait[T.id]; state.tid = trs[0].id; dlg.close(); afterSave(trs, [], Date.now()); })
+        .catch(function (c) { b.disabled = false; say(saveErr(c), "err"); });
+    });
+  }
+
   function initCfg() {
     var d = $("#cfg"), gm = $("#ghMsg");
     $("#openCfg").addEventListener("click", openCfg);
@@ -711,6 +888,34 @@ h1{font-weight:600;letter-spacing:-.05em}
   var tokGet = function () { try { return localStorage.getItem("gh_tok") || ""; } catch (e) { return ""; } };
   var tokSet = function (v) { try { if (v) localStorage.setItem("gh_tok", v); else localStorage.removeItem("gh_tok"); } catch (e) {} };
 
+  var cfgOut = function (trs) {
+    return JSON.stringify({ trajetos: trs.map(function (t) { return { id: t.id, nome: t.nome, origens: t.origens, destino: t.destino, idas: t.idas, voltas: t.voltas, teto: t.teto }; }) }, null, 2);
+  };
+  var saveErr = function (c) {
+    return c === 401 || c === 403 || c === 404 ? "O GitHub recusou o token (erro " + c + "). Confira se ele tem permissão de escrita em Contents deste repositório." : "Não foi possível salvar. Tente de novo.";
+  };
+  // le o config.json do repositorio, aplica a alteracao e grava de volta (devolve a lista nova de trajetos)
+  function saveCfg(mut, msg) {
+    var tok = tokGet();
+    if (!tok) return Promise.reject("notok");
+    var url = "https://api.github.com/repos/" + REPO + "/contents/" + CFG;
+    var H = { Authorization: "Bearer " + tok, Accept: "application/vnd.github+json" };
+    var outTrs;
+    return fetch(url + "?ref=main&t=" + Date.now(), { headers: H, cache: "no-store" })
+      .then(function (r) { if (r.status === 404) return {}; if (!r.ok) throw r.status; return r.json(); })
+      .then(function (f) {
+        var c = null;
+        try { c = JSON.parse(decodeURIComponent(escape(atob((f.content || "").replace(/\s/g, ""))))); } catch (e) { c = null; }
+        var trs = c ? normalizeCfg(c) : [];
+        if (!trs.length) trs = clone(state.trs);
+        outTrs = mut(trs) || trs;
+        var body = { message: msg, content: btoa(unescape(encodeURIComponent(cfgOut(outTrs) + "\n"))), branch: "main" };
+        if (f && f.sha) body.sha = f.sha;
+        return fetch(url, { method: "PUT", headers: H, body: JSON.stringify(body) });
+      })
+      .then(function (r) { if (!r.ok) throw r.status; return outTrs; });
+  }
+
   var addDays = function (iso, n) { return new Date(new Date(iso + "T12:00:00").getTime() + n * 864e5).toISOString().slice(0, 10); };
   var cap = function (t) { return t.charAt(0).toUpperCase() + t.slice(1); };
   var CAL_ICO = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>';
@@ -720,8 +925,8 @@ h1{font-weight:600;letter-spacing:-.05em}
       '<div class="dtitle"><div><h2>Datas da busca</h2><p>Escolha quando você quer ir e voltar. A busca automática (08h e 20h) consulta somente estas datas.</p></div>' +
       '<span class="dstate" id="dState"><i></i><span>Fixado</span></span></div>' +
       '<div class="dgrid">' +
-        '<div class="dcol"><span class="dtag">Ida</span><div class="dttl">São Paulo → Aracaju</div><div class="dval" id="vIda"></div></div>' +
-        '<div class="dcol"><span class="dtag">Volta</span><div class="dttl">Aracaju → São Paulo</div><div class="dval" id="vVolta"></div></div>' +
+        '<div class="dcol"><span class="dtag">Ida</span><div class="dttl">' + esc(orgOf(curT()) + " → " + dstOf(curT())) + '</div><div class="dval" id="vIda"></div></div>' +
+        '<div class="dcol"><span class="dtag">Volta</span><div class="dttl">' + esc(dstOf(curT()) + " → " + orgOf(curT())) + '</div><div class="dval" id="vVolta"></div></div>' +
       '</div>' +
       '<div class="dsum" id="dInfo"></div>' +
       '<div class="dact">' +
@@ -736,8 +941,11 @@ h1{font-weight:600;letter-spacing:-.05em}
     var hoje = new Date(Date.now() - 3 * 36e5).toISOString().slice(0, 10);
     var cur = { idas: j.idas.slice(), voltas: j.voltas.slice() }, draft = { idas: j.idas.slice(), voltas: j.voltas.slice() };
     var pick = { ida: null, volta: null }, view = hoje.slice(0, 7);
-    var waiting = state.waiting;
-    var cfgJson = function () { return JSON.stringify(tetoVal() ? { idas: draft.idas, voltas: draft.voltas, teto: tetoVal() } : { idas: draft.idas, voltas: draft.voltas }, null, 2) + "\n"; };
+    var waiting = isWaiting();
+    var cfgJson = function () {
+      var T0 = curT();
+      return cfgOut(state.trs.map(function (t) { var o = clone(t); if (T0 && t.id === T0.id) { o.idas = draft.idas.slice(); o.voltas = draft.voltas.slice(); } return o; })) + "\n";
+    };
     var same = function () { return JSON.stringify(draft.idas) === JSON.stringify(cur.idas) && JSON.stringify(draft.voltas) === JSON.stringify(cur.voltas); };
     var pares = function () { var n = 0; draft.idas.forEach(function (i) { draft.voltas.forEach(function (v) { if (noites(i, v) >= min) n++; }); }); return n; };
     var say = function (t, cls) { var m = $("#dMsg"); m.textContent = t || ""; m.className = "msg" + (cls ? " " + cls : ""); };
@@ -748,7 +956,7 @@ h1{font-weight:600;letter-spacing:-.05em}
       var n = pares(), single = draft.idas.length === 1 && draft.voltas.length === 1;
       $("#dChooseT").textContent = single ? dm(draft.idas[0]) + " → " + dm(draft.voltas[0]) + " · alterar datas" : "Escolher datas";
       $("#dInfo").innerHTML = single
-        ? "<span><b>" + noites(draft.idas[0], draft.voltas[0]) + " noites</b> em Aracaju</span><span>·</span><span>preço total de ida e volta</span>"
+        ? "<span><b>" + noites(draft.idas[0], draft.voltas[0]) + " noites</b> em " + esc(dstOf(curT())) + "</span><span>·</span><span>preço total de ida e volta</span>"
         : "<span><b>" + n + (n === 1 ? " combinação válida" : " combinações válidas") + "</b> (mínimo de " + min + " noites)</span>";
       var st = $("#dState"), pend = !same();
       st.className = "dstate" + (pend || waiting ? " pend" : ""); st.lastChild.textContent = pend ? "Alterações não fixadas" : waiting ? "Consultando novo período…" : "Fixado";
@@ -824,29 +1032,15 @@ h1{font-weight:600;letter-spacing:-.05em}
     // salvar no repositorio
     $("#dSave").addEventListener("click", function () {
       if (same()) { closeCal(); say("Estas datas já estão fixadas. Escolha outras datas para alterar.", ""); return; }
-      var tok = tokGet();
-      if (!tok) { say("Conecte o GitHub em Configurações para fixar as datas.", "err"); openCfg(); return; }
+      if (!tokGet()) { say("Conecte o GitHub em Configurações para fixar as datas.", "err"); openCfg(); return; }
       var b = $("#dSave"); b.disabled = true; say("Salvando…");
-      var url = "https://api.github.com/repos/" + REPO + "/contents/" + CFG;
-      var H = { Authorization: "Bearer " + tok, Accept: "application/vnd.github+json" };
-      fetch(url + "?ref=main&t=" + Date.now(), { headers: H, cache: "no-store" })
-        .then(function (r) { if (r.status === 404) return {}; if (!r.ok) throw r.status; return r.json(); })
-        .then(function (f) {
-          var body = { message: "Fixa datas da busca pelo painel", content: btoa(cfgJson()), branch: "main" };
-          if (f && f.sha) body.sha = f.sha;
-          return fetch(url, { method: "PUT", headers: H, body: JSON.stringify(body) });
-        })
-        .then(function (r) {
-          if (!r.ok) throw r.status;
-          cur = { idas: draft.idas.slice(), voltas: draft.voltas.slice() };
-          var ts = Date.now();
-          pendSet({ idas: cur.idas, voltas: cur.voltas, ts: ts });
-          setWindow(cur, ts);
-        })
-        .catch(function (c) {
-          b.disabled = false;
-          say(c === 401 || c === 403 || c === 404 ? "O GitHub recusou o token (erro " + c + "). Confira se ele tem permissão de escrita em Contents deste repositório." : "Não foi possível salvar. Tente de novo.", "err");
-        });
+      var tid = curT().id, di = draft.idas.slice(), dv = draft.voltas.slice();
+      saveCfg(function (trs) {
+        trs.forEach(function (t) { if (t.id === tid) { t.idas = di; t.voltas = dv; } });
+        return trs;
+      }, "Fixa datas da busca pelo painel")
+        .then(function (trs) { afterSave(trs, [tid], Date.now()); })
+        .catch(function (c) { b.disabled = false; say(saveErr(c), "err"); });
     });
     paint();
     window.__dirty = function () { return !same() || !cal.hidden; };
@@ -885,7 +1079,7 @@ h1{font-weight:600;letter-spacing:-.05em}
       var u = safeUrl(r.link), tag = u ? "a" : "div", href = u ? ' href="' + esc(u) + '" target="_blank" rel="noopener"' : "";
       return "<" + tag + ' class="opt"' + href + '><div class="t"><div class="p">' + brl(r.preco) + '</div><span class="ck"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12L12 4M5 4h7v7"/></svg></span></div>' +
         '<div class="d">Ida ' + esc(dmy(r.ida)) + " · Volta " + esc(dmy(r.volta)) + '</div>' +
-        '<div class="m">' + esc(r.origem) + " → " + esc(dest()) + " → São Paulo · " + esc(r.cia) + " · " + noites(r.ida, r.volta) + " noites</div>" +
+        '<div class="m">' + esc(r.origem) + " → " + esc(dest()) + " → " + esc(orgOf(curT())) + " · " + esc(r.cia) + " · " + noites(r.ida, r.volta) + " noites</div>" +
         '<span class="chip ' + (r.escalas === 0 ? "good" : "") + '">' + esc(escalas(r.escalas)) + " na ida</span></" + tag + ">";
     }).join("");
   }
