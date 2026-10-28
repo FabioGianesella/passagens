@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Alerta de passagens SAO (CGH/GRU/VCP) -> AJU -> SAO (ida e volta), aviso no celular via ntfy.
-Foco: semana de 23/11/2026 a 28/11/2026. Fonte: Google Flights via SerpAPI.
+Alerta de passagens (ida e volta) para ate 5 trajetos configurados no painel, aviso no celular via ntfy.
+Fonte: Google Flights via SerpAPI.
 
 Variaveis de ambiente: SERPAPI_KEY e NTFY_TOPIC.
 
@@ -17,56 +17,98 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 # ====================== CONFIGURACAO ======================
-ORIGENS = "CGH,GRU,VCP"          # SAO = Congonhas, Guarulhos e Viracopos: sai daqui e volta pra ca
-DESTINO = "AJU"
+ID_PADRAO = "sp-aju"
 IDAS_PADRAO = [date(2026, 11, 23), date(2026, 11, 24), date(2026, 11, 25)]    # usado se nao houver config.json valido
 VOLTAS_PADRAO = [date(2026, 11, 28)]
+MAX_TRAJETOS = 5                 # trajetos monitorados ao mesmo tempo
 MIN_NOITES = 2                   # minimo de noites entre ida e volta
-MAX_COMBINACOES = 12             # limite de pares ida/volta aceitos no config.json
-MAX_BUSCAS = 4                   # buscas por execucao (2 execucoes/dia: 4 x 2 x 30 = 240 de 250/mes)
+MAX_COMBINACOES = 12             # limite de pares ida/volta por trajeto
+MAX_BUSCAS = 4                   # buscas por execucao (2 execucoes/dia: 4 x 2 x 30 = 240 de 250/mes), divididas entre os trajetos
 MAX_ESCALAS = 1                  # None = qualquer; 0 = so direto; 1 = ate 1 parada
-TETO_ALERTA = 1500               # avisa sempre que houver preco igual ou abaixo (R$)
+TETO_PADRAO = 1500               # teto de alerta (R$) de um trajeto sem teto proprio
 QUEDA_PERCENTUAL = 10            # avisa se o preco ficar X% abaixo da media dos ultimos 30 dias
 HISTORICO = Path(__file__).with_name("historico.csv")
 VOOS_NOVOS = Path(__file__).with_name("voos_novos.json")
 GRAFICO = Path(__file__).with_name("grafico.png")
-CONFIG = Path(__file__).with_name("config.json")   # datas escolhidas e fixadas pelo painel
+CONFIG = Path(__file__).with_name("config.json")   # trajetos, datas e tetos escolhidos e fixados pelo painel
 # ==========================================================
 
-def carregar_datas():
-    """Le as datas de config.json (gravado pelo painel). Se faltar ou for invalido, usa o padrao."""
+def _cods(txt, maximo):
+    """'CGH, GRU' -> ['CGH','GRU'] (codigos IATA de 3 letras, sem repetir); invalido -> None."""
+    cods = []
+    for x in str(txt or "").replace(";", ",").replace(" ", ",").split(","):
+        x = x.strip().upper()
+        if not x:
+            continue
+        if not (len(x) == 3 and x.isalpha() and x.isascii()):
+            return None
+        if x not in cods:
+            cods.append(x)
+    return cods if 1 <= len(cods) <= maximo else None
+
+
+def _datas(lst):
+    return sorted({date.fromisoformat(x) for x in lst})
+
+
+def _trajeto(c, i):
+    """Valida um trajeto vindo do config.json; devolve dict ou None se invalido."""
+    try:
+        tid = str(c.get("id") or ("t%d" % (i + 1)))
+        if not (1 <= len(tid) <= 24 and all(ch.isalnum() or ch == "-" for ch in tid) and tid.isascii()):
+            return None
+        org, dst = _cods(c.get("origens"), 3), _cods(c.get("destino"), 1)
+        idas, voltas = _datas(c["idas"]), _datas(c["voltas"])
+        if not org or not dst or dst[0] in org or not idas or not voltas:
+            return None
+        if len(idas) * len(voltas) > MAX_COMBINACOES or not any((v - i_).days >= MIN_NOITES for i_ in idas for v in voltas):
+            return None
+        teto = int(c.get("teto") or TETO_PADRAO)
+        if not 100 <= teto <= 50000:
+            teto = TETO_PADRAO
+        nome = str(c.get("nome") or "").strip()[:40] or ("%s > %s" % ("/".join(org), dst[0]))
+        return {"id": tid, "nome": nome, "origens": ",".join(org), "destino": dst[0], "idas": idas, "voltas": voltas, "teto": teto}
+    except (ValueError, KeyError, TypeError, AttributeError):
+        return None
+
+
+TRAJETO_PADRAO = {"id": ID_PADRAO, "nome": "Sao Paulo > Aracaju", "origens": "CGH,GRU,VCP", "destino": "AJU",
+                  "idas": IDAS_PADRAO, "voltas": VOLTAS_PADRAO, "teto": TETO_PADRAO}
+
+
+def carregar_trajetos():
+    """Le os trajetos de config.json (gravado pelo painel). Aceita o formato antigo (um trajeto so)."""
     try:
         c = json.loads(CONFIG.read_text(encoding="utf-8"))
-        idas = sorted({date.fromisoformat(x) for x in c["idas"]})
-        voltas = sorted({date.fromisoformat(x) for x in c["voltas"]})
-        if (idas and voltas and len(idas) * len(voltas) <= MAX_COMBINACOES
-                and any((v - i).days >= MIN_NOITES for i in idas for v in voltas)):
-            return idas, voltas
-    except (OSError, ValueError, KeyError, TypeError):
+        if isinstance(c.get("trajetos"), list):
+            res, ids = [], set()
+            for i, t in enumerate(c["trajetos"][:MAX_TRAJETOS]):
+                v = _trajeto(t, i)
+                if v and v["id"] not in ids:
+                    ids.add(v["id"]); res.append(v)
+            if res:
+                return res
+        else:  # formato antigo: idas/voltas/teto na raiz = Sao Paulo > Aracaju
+            v = _trajeto({"id": ID_PADRAO, "nome": TRAJETO_PADRAO["nome"], "origens": "CGH,GRU,VCP", "destino": "AJU",
+                          "idas": c["idas"], "voltas": c["voltas"], "teto": c.get("teto")}, 0)
+            if v:
+                return [v]
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
         pass
-    return IDAS_PADRAO, VOLTAS_PADRAO
+    return [dict(TRAJETO_PADRAO)]
 
 
-IDAS, VOLTAS = carregar_datas()
-
-
-def carregar_teto():
-    """Teto do alerta (R$): vem de config.json (editavel no painel); invalido/ausente = padrao."""
-    try:
-        t = int(json.loads(CONFIG.read_text(encoding="utf-8"))["teto"])
-        if 100 <= t <= 50000:
-            return t
-    except (OSError, ValueError, KeyError, TypeError):
-        pass
-    return TETO_ALERTA
-
-
-TETO_ALERTA = carregar_teto()
+TRAJETOS = carregar_trajetos()
 
 KEY = os.getenv("SERPAPI_KEY")
 TOPIC = (os.getenv("NTFY_TOPIC") or "").strip()
-CAMPOS = ["consulta", "ida", "volta", "preco", "origem", "cia", "escalas", "link"]
+CAMPOS = ["consulta", "ida", "volta", "preco", "origem", "cia", "escalas", "link", "trajeto"]
 NL = chr(10)
+
+
+def rotulo(t):
+    o = t["origens"]
+    return ("SAO" if o == "CGH,GRU,VCP" else o.replace(",", "/")) + "-" + t["destino"]
 
 
 def dm(iso):
@@ -89,7 +131,7 @@ def avisar(titulo, msg, link="", prioridade="default", acoes="", anexo=None):
         print("NTFY_TOPIC nao definido: sem notificacao.")
         return
     url = f"https://ntfy.sh/{TOPIC}"
-    h = {"Title": titulo, "Priority": prioridade, "Tags": "airplane"}
+    h = {"Title": ascii_safe(titulo), "Priority": prioridade, "Tags": "airplane"}
     if link:
         h["Click"] = link
     try:
@@ -125,11 +167,13 @@ def cota_restante():
 
 
 def combinacoes(n):
-    """Pares (ida, volta) da janela; cada execucao pega um bloco diferente, cobrindo tudo ao longo do dia."""
+    """Triplas (trajeto, ida, volta) de todos os trajetos; cada execucao pega um bloco diferente (rodizio),
+    entao a cota de buscas e dividida igualmente entre trajetos e datas."""
     if n <= 0:
         return []
     hoje = date.today()
-    todos = [(i, v) for i in IDAS for v in VOLTAS if (v - i).days >= MIN_NOITES and i > hoje]
+    todos = [(t, i, v) for t in TRAJETOS for i in t["idas"] for v in t["voltas"]
+             if (v - i).days >= MIN_NOITES and i > hoje]
     if not todos:
         return []
     slot = hoje.toordinal() * 2 + datetime.now().hour // 12
@@ -161,8 +205,8 @@ def detalhe(o):
             "paradas": [(l.get("id") or "") for l in (o.get("layovers") or [])]}
 
 
-def buscar(ida, volta):
-    params = {"engine": "google_flights", "departure_id": ORIGENS, "arrival_id": DESTINO,
+def buscar(t, ida, volta):
+    params = {"engine": "google_flights", "departure_id": t["origens"], "arrival_id": t["destino"],
               "outbound_date": ida.isoformat(), "return_date": volta.isoformat(), "type": 1,
               "currency": "BRL", "hl": "pt", "gl": "br", "api_key": KEY}
     if MAX_ESCALAS is not None:
@@ -175,6 +219,7 @@ def buscar(ida, volta):
         return None
     link = data.get("search_metadata", {}).get("google_flights_url", "")
     res = resumo(min(ofertas, key=lambda x: x["price"]), ida, volta, link)
+    res["trajeto"] = t["id"]
     diretos = [o for o in ofertas if len(o.get("flights", [])) == 1]
     voos, vistos = [], set()
     for o in sorted(ofertas, key=lambda x: x["price"]):
@@ -186,6 +231,8 @@ def buscar(ida, volta):
             break
     res["voos"] = voos
     res["direto"] = resumo(min(diretos, key=lambda x: x["price"]), ida, volta, link) if diretos else None
+    if res["direto"]:
+        res["direto"]["trajeto"] = t["id"]
     return res
 
 
@@ -197,7 +244,8 @@ def ler_historico():
     with HISTORICO.open(encoding="utf-8") as f:
         for l in csv.DictReader(f):
             try:
-                chave = (l["consulta"], l["ida"], l["volta"], int(float(l["preco"])), l["origem"], l["cia"])
+                l["trajeto"] = l.get("trajeto") or ID_PADRAO   # historico antigo = Sao Paulo > Aracaju
+                chave = (l["consulta"], l["ida"], l["volta"], int(float(l["preco"])), l["origem"], l["cia"], l["trajeto"])
                 if chave in vistos:
                     continue  # ignora linhas repetidas (mesma busca no mesmo dia)
                 vistos.add(chave)
@@ -207,32 +255,43 @@ def ler_historico():
     return rows
 
 
-def na_janela(l):
+def na_janela(l, t):
     try:
-        return date.fromisoformat(l["ida"]) in IDAS and date.fromisoformat(l["volta"]) in VOLTAS
+        return (l.get("trajeto") or ID_PADRAO) == t["id"] and date.fromisoformat(l["ida"]) in t["idas"] and date.fromisoformat(l["volta"]) in t["voltas"]
     except (KeyError, ValueError, TypeError):
         return False
 
 
+def _linha(l):
+    return {c: l.get(c, "") for c in CAMPOS} | {"preco": int(float(l["preco"]))}
+
+
 def salvar(rs, existentes):
     hoje = date.today().isoformat()
-    chaves = {(l.get("consulta"), l.get("ida"), l.get("volta"), str(int(l["preco"])), l.get("origem"), l.get("cia"))
+    chaves = {(l.get("consulta"), l.get("ida"), l.get("volta"), str(int(l["preco"])), l.get("origem"), l.get("cia"), l.get("trajeto") or ID_PADRAO)
               for l in existentes}
     novos = [r for r in rs
-             if (hoje, r["ida"], r["volta"], str(int(r["preco"])), r["origem"], r["cia"]) not in chaves]
+             if (hoje, r["ida"], r["volta"], str(int(r["preco"])), r["origem"], r["cia"], r.get("trajeto") or ID_PADRAO) not in chaves]
     if not novos:
         return
-    novo_arquivo = not HISTORICO.exists() or HISTORICO.stat().st_size == 0
+    cab_ok = False
+    if HISTORICO.exists() and HISTORICO.stat().st_size > 0:
+        with HISTORICO.open(encoding="utf-8") as f:
+            cab_ok = f.readline().strip().split(",") == CAMPOS
+    if not cab_ok:   # arquivo novo ou no formato antigo (sem coluna trajeto): reescreve tudo uma vez
+        with HISTORICO.open("w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=CAMPOS, extrasaction="ignore")
+            w.writeheader()
+            for l in existentes:
+                w.writerow(_linha(l))
     with HISTORICO.open("a", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=CAMPOS, extrasaction="ignore")
-        if novo_arquivo:
-            w.writeheader()
         for r in novos:
-            w.writerow({"consulta": hoje, **r})
+            w.writerow({"consulta": hoje, **r, "trajeto": r.get("trajeto") or ID_PADRAO})
 
 
 # ---------------------------- resumo semanal ----------------------------
-def grafico(jan):
+def grafico(jan, t):
     try:
         import matplotlib
         matplotlib.use("Agg")
@@ -245,7 +304,7 @@ def grafico(jan):
             return None
         fig, ax = plt.subplots(figsize=(8, 4))
         ax.plot([dm(d) for d in dias], [por_dia[d] for d in dias], marker="o")
-        ax.set_title(f"Menor preco por dia - SAO > AJU ({IDAS[0]:%d/%m} a {VOLTAS[-1]:%d/%m})")
+        ax.set_title(f"Menor preco por dia - {rotulo(t)} ({t['idas'][0]:%d/%m} a {t['voltas'][-1]:%d/%m})")
         ax.set_ylabel("R$")
         ax.grid(alpha=0.3)
         fig.tight_layout()
@@ -256,8 +315,8 @@ def grafico(jan):
         return None
 
 
-def resumo_semanal(hoje):
-    jan = [l for l in ler_historico() if na_janela(l)]
+def resumo_semanal(hoje, t, hist):
+    jan = [l for l in hist if na_janela(l, t)]
     corte = (hoje - timedelta(days=7)).isoformat()
     corte2 = (hoje - timedelta(days=14)).isoformat()
     sem = [l for l in jan if l["consulta"] >= corte]
@@ -273,97 +332,108 @@ def resumo_semanal(hoje):
         m_ant = statistics.mean(l["preco"] for l in ant)
         linhas.append(f"Vs semana anterior: {(m_sem / m_ant - 1) * 100:+.0f}%")
     linhas.append(f"Recorde geral: R$ {min(l['preco'] for l in jan):.0f}")
-    avisar("Resumo semanal SAO-AJU", NL.join(linhas), link=melhor.get("link", ""), anexo=grafico(jan))
+    avisar(f"Resumo semanal {rotulo(t)}", NL.join(linhas), link=melhor.get("link", ""), anexo=grafico(jan, t))
 
 
-# ---------------------------- principal ----------------------------
-def main():
-    if not KEY:
-        avisar("Falha no alerta SAO-AJU", "SERPAPI_KEY nao definida.", prioridade="high")
-        sys.exit("Defina SERPAPI_KEY.")
-    hoje = date.today()
-    left = cota_restante()
-    if left is not None and left <= 0:
-        avisar("Falha no alerta SAO-AJU", "A cota de buscas do SerpAPI acabou neste mes.", prioridade="high")
-        sys.exit(1)
-    n = MAX_BUSCAS if left is None else min(MAX_BUSCAS, left)
-    combos = combinacoes(n)
-    if not combos:
-        print("Sem datas futuras na janela: busca encerrada.")
-        if hoje <= IDAS[-1] + timedelta(days=1):
-            avisar("Alerta SAO-AJU encerrado", "A janela de datas terminou. Configure novas datas para continuar.")
-        return
-
-    rs, erros = [], []
-    for ida, volta in combos:
-        try:
-            r = buscar(ida, volta)
-        except requests.HTTPError as e:
-            cod = e.response.status_code if e.response is not None else "?"
-            erros.append(f"HTTP {cod}")
-            print(f"Erro {ida}->{volta}: HTTP {cod}")
-        except Exception as e:
-            erros.append(type(e).__name__)
-            print(f"Erro {ida}->{volta}: {type(e).__name__}")
-        else:
-            if r:
-                rs.append(r)
-    if not rs:
-        motivo = ", ".join(sorted(set(erros))) if erros else "sem ofertas para as datas"
-        avisar("Falha no alerta SAO-AJU", f"A busca de hoje nao trouxe resultados ({motivo}).", prioridade="high")
-        sys.exit(1)
-
-    hist = ler_historico()
-    jan = [l for l in hist if na_janela(l)]
+def alertar(t, rs, hist, hoje, left, usadas):
+    """Decide e envia o aviso de UM trajeto, com base nas buscas desta rodada (rs) e no historico dele."""
+    jan = [l for l in hist if na_janela(l, t)]
     ant = [l["preco"] for l in jan]
     recorde = min(ant) if ant else None
     lim = (hoje - timedelta(days=30)).isoformat()
     rec30 = [l for l in jan if l.get("consulta", "") >= lim]
     dias30 = {l["consulta"] for l in rec30}
     media = statistics.mean(l["preco"] for l in rec30) if len(rec30) >= 6 and len(dias30) >= 3 else None
-    salvar(rs, hist)
+    rs = sorted(rs, key=lambda r: r["preco"])
+    melhor = rs[0]
+    p, teto, tag = melhor["preco"], t["teto"], rotulo(t)
+    if recorde is None:
+        titulo, prio = f"Monitoramento {tag} iniciado", "default"
+    elif p < recorde:
+        titulo, prio = f"Menor preco ja visto! {tag}", "high"
+    elif p <= teto:
+        titulo, prio = f"Abaixo de R$ {teto}! {tag}", "high"
+    elif media and p <= media * (1 - QUEDA_PERCENTUAL / 100):
+        titulo, prio = f"Queda de preco {tag}", "default"
+    else:
+        titulo = None
+    if not titulo:
+        rec = f"{recorde:.0f}" if recorde else "-"
+        print(f"[{tag}] Sem alerta: menor preco R$ {p:.0f} (recorde R$ {rec}, teto R$ {teto}).")
+        return
+    linhas = [fmt(r) for r in rs[:3]]
+    diretos = [r["direto"] for r in rs if r.get("direto")]
+    if diretos:
+        d = min(diretos, key=lambda r: r["preco"])
+        if d["preco"] > melhor["preco"]:
+            linhas.append("Melhor direto: " + fmt(d))
+    if media:
+        linhas.append(f"Media 30 dias: R$ {media:.0f} ({(p / media - 1) * 100:+.0f}% hoje)")
+    if recorde:
+        linhas.append(f"Recorde anterior: R$ {recorde:.0f}")
+    if left is not None and left - usadas <= 20:
+        linhas.append(f"Atencao: restam ~{max(left - usadas, 0)} buscas no SerpAPI")
+    acoes = "; ".join(f"view, Opcao {i + 1} R$ {r['preco']:.0f}, '{r['link']}'"
+                      for i, r in enumerate(rs[:3]) if r.get("link"))
+    avisar(titulo, NL.join(linhas), melhor["link"], prio, acoes)
+
+
+# ---------------------------- principal ----------------------------
+def main():
+    if not KEY:
+        avisar("Falha no alerta de passagens", "SERPAPI_KEY nao definida.", prioridade="high")
+        sys.exit("Defina SERPAPI_KEY.")
+    hoje = date.today()
+    left = cota_restante()
+    if left is not None and left <= 0:
+        avisar("Falha no alerta de passagens", "A cota de buscas do SerpAPI acabou neste mes.", prioridade="high")
+        sys.exit(1)
+    n = MAX_BUSCAS if left is None else min(MAX_BUSCAS, left)
+    combos = combinacoes(n)
+    if not combos:
+        print("Sem datas futuras em nenhum trajeto: busca encerrada.")
+        for t in TRAJETOS:
+            if hoje <= t["idas"][-1] + timedelta(days=1):
+                avisar(f"Alerta {rotulo(t)} encerrado", "A janela de datas terminou. Configure novas datas para continuar.")
+        return
+
+    rs, erros = [], []
+    for t, ida, volta in combos:
+        try:
+            r = buscar(t, ida, volta)
+        except requests.HTTPError as e:
+            cod = e.response.status_code if e.response is not None else "?"
+            erros.append(f"HTTP {cod}")
+            print(f"Erro {rotulo(t)} {ida}->{volta}: HTTP {cod}")
+        except Exception as e:
+            erros.append(type(e).__name__)
+            print(f"Erro {rotulo(t)} {ida}->{volta}: {type(e).__name__}")
+        else:
+            if r:
+                rs.append(r)
+    if not rs:
+        motivo = ", ".join(sorted(set(erros))) if erros else "sem ofertas para as datas"
+        avisar("Falha no alerta de passagens", f"A busca de hoje nao trouxe resultados ({motivo}).", prioridade="high")
+        sys.exit(1)
+
+    hist = ler_historico()
+    salvar(rs, hist)   # (alertas comparam com o historico de ANTES desta rodada)
     try:  # voos detalhados desta rodada; o gerar_dados.py junta ao painel
         VOOS_NOVOS.write_text(json.dumps(
-            {f"{r['ida']}|{r['volta']}": {"consulta": hoje.isoformat(), "link": r.get("link", ""), "voos": r.get("voos", [])}
+            {f"{r['trajeto']}|{r['ida']}|{r['volta']}": {"consulta": hoje.isoformat(), "link": r.get("link", ""), "voos": r.get("voos", [])}
              for r in rs}, ensure_ascii=False), encoding="utf-8")
     except Exception as e:
         print("Nao salvei os voos detalhados:", type(e).__name__)
 
-    rs.sort(key=lambda r: r["preco"])
-    melhor = rs[0]
-    p = melhor["preco"]
-    if recorde is None:
-        titulo, prio = "Monitoramento SAO-AJU iniciado", "default"
-    elif p < recorde:
-        titulo, prio = "Menor preco ja visto! SAO-AJU", "high"
-    elif p <= TETO_ALERTA:
-        titulo, prio = f"Abaixo de R$ {TETO_ALERTA}! SAO-AJU", "high"
-    elif media and p <= media * (1 - QUEDA_PERCENTUAL / 100):
-        titulo, prio = "Queda de preco SAO-AJU", "default"
-    else:
-        titulo = None
-
-    if titulo:
-        linhas = [fmt(r) for r in rs[:3]]
-        diretos = [r["direto"] for r in rs if r.get("direto")]
-        if diretos:
-            d = min(diretos, key=lambda r: r["preco"])
-            if d["preco"] > melhor["preco"]:
-                linhas.append("Melhor direto: " + fmt(d))
-        if media:
-            linhas.append(f"Media 30 dias: R$ {media:.0f} ({(p / media - 1) * 100:+.0f}% hoje)")
-        if recorde:
-            linhas.append(f"Recorde anterior: R$ {recorde:.0f}")
-        if left is not None and left - len(combos) <= 20:
-            linhas.append(f"Atencao: restam ~{max(left - len(combos), 0)} buscas no SerpAPI")
-        acoes = "; ".join(f"view, Opcao {i + 1} R$ {r['preco']:.0f}, '{r['link']}'"
-                          for i, r in enumerate(rs[:3]) if r.get("link"))
-        avisar(titulo, NL.join(linhas), melhor["link"], prio, acoes)
-    else:
-        print(f"Sem alerta: menor preco R$ {p:.0f} (recorde R$ {recorde:.0f}, teto R$ {TETO_ALERTA}).")
+    for t in TRAJETOS:
+        rt = [r for r in rs if r.get("trajeto") == t["id"]]
+        if rt:
+            alertar(t, rt, hist, hoje, left, len(combos))
 
     if hoje.weekday() == 0 and datetime.now().hour < 12:
-        resumo_semanal(hoje)
+        hist2 = ler_historico()
+        for t in TRAJETOS:
+            resumo_semanal(hoje, t, hist2)
 
 
 if __name__ == "__main__":
@@ -372,5 +442,5 @@ if __name__ == "__main__":
     except SystemExit:
         raise
     except Exception as e:
-        avisar("Erro no alerta SAO-AJU", f"Falha inesperada: {type(e).__name__}", prioridade="high")
+        avisar("Erro no alerta de passagens", f"Falha inesperada: {type(e).__name__}", prioridade="high")
         raise
