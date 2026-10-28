@@ -72,7 +72,7 @@ def _trajeto(c, i):
         return None
 
 
-TRAJETO_PADRAO = {"id": ID_PADRAO, "nome": "Sao Paulo > Aracaju", "origens": "CGH,GRU,VCP", "destino": "AJU",
+TRAJETO_PADRAO = {"id": ID_PADRAO, "nome": "São Paulo → Aracaju", "origens": "CGH,GRU,VCP", "destino": "AJU",
                   "idas": IDAS_PADRAO, "voltas": VOLTAS_PADRAO, "teto": TETO_PADRAO}
 
 
