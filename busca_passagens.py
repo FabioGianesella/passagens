@@ -49,6 +49,20 @@ def carregar_datas():
 
 IDAS, VOLTAS = carregar_datas()
 
+
+def carregar_teto():
+    """Teto do alerta (R$): vem de config.json (editavel no painel); invalido/ausente = padrao."""
+    try:
+        t = int(json.loads(CONFIG.read_text(encoding="utf-8"))["teto"])
+        if 100 <= t <= 50000:
+            return t
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return TETO_ALERTA
+
+
+TETO_ALERTA = carregar_teto()
+
 KEY = os.getenv("SERPAPI_KEY")
 TOPIC = (os.getenv("NTFY_TOPIC") or "").strip()
 CAMPOS = ["consulta", "ida", "volta", "preco", "origem", "cia", "escalas", "link"]
