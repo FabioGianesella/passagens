@@ -72,8 +72,8 @@ h1{font-size:clamp(34px,5vw,58px);line-height:1.04;font-weight:500;letter-spacin
 .route svg{width:20px;height:20px;color:var(--muted)}
 
 /* tabuleiro */
-.board{display:grid;gap:18px;grid-template-columns:1fr;grid-template-areas:"hero" "voos" "chart" "datas" "combos"}
-.a-opts{grid-area:opts}.a-donut{grid-area:donut}.a-chart{grid-area:chart}.a-hero{grid-area:hero}.a-voos{grid-area:voos}.a-combos{grid-area:combos}.a-datas{grid-area:datas}
+.board{display:grid;gap:18px;grid-template-columns:1fr;grid-template-areas:"hero" "voos" "chart" "datas" "teto" "combos"}
+.a-opts{grid-area:opts}.a-donut{grid-area:donut}.a-chart{grid-area:chart}.a-hero{grid-area:hero}.a-voos{grid-area:voos}.a-teto{grid-area:teto}.a-combos{grid-area:combos}.a-datas{grid-area:datas}
 .card{background:var(--card);border:1px solid var(--cardb);border-radius:34px;padding:24px;position:relative;scroll-margin-top:20px;min-width:0}
 .ch{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
 .ch h2{font-size:20px;font-weight:500;letter-spacing:-.03em}
@@ -269,6 +269,9 @@ details.a-combos[open]>summary{margin-bottom:14px}
 .vo .p{font-size:20px;font-weight:600;text-align:right}
 .vo.top{border-color:var(--text)}
 @media (max-width:640px){.vo{grid-template-columns:1fr auto}.vo .m{grid-column:1/-1;order:3}}
+.tetorow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:6px}
+.tetoin{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:0 16px;height:46px;background:var(--card)}
+.tetoin input{border:0;background:transparent;color:var(--text);font:inherit;font-size:18px;font-weight:600;width:90px;outline:none}
 </style>
 </head>
 <body>
@@ -355,13 +358,14 @@ details.a-combos[open]>summary{margin-bottom:14px}
   };
   var escalas = function (n) { return n === 0 ? "Direto" : n + (n === 1 ? " escala" : " escalas"); };
 
-  var state = { range: "30", direct: "all", all: null, win: null, data: null, waiting: false, waitTs: 0, polling: false };
+  var state = { tetoOv:null, tetoTs:0, range: "30", direct: "all", all: null, win: null, data: null, waiting: false, waitTs: 0, polling: false };
   var sameWin = function (a, b) { return !!a && !!b && JSON.stringify(a.idas) === JSON.stringify(b.idas) && JSON.stringify(a.voltas) === JSON.stringify(b.voltas); };
   var pendGet = function () { try { return JSON.parse(localStorage.getItem("pend") || "null"); } catch (e) { return null; } };
   var pendSet = function (v) { try { if (v) localStorage.setItem("pend", JSON.stringify(v)); else localStorage.removeItem("pend"); } catch (e) {} };
   var validWin = function (c) { return !!(c && c.idas && c.voltas && c.idas.length && c.voltas.length); };
 
   // dados completos (todo o historico) + janela escolhida => visao exibida
+  function tetoVal() { var t = state.tetoOv != null ? state.tetoOv : (state.data && state.data.teto) || 0; return t > 0 ? t : 0; }
   function derive() {
     var all = state.all;
     if (!all) { state.data = null; return; }
@@ -403,6 +407,9 @@ details.a-combos[open]>summary{margin-bottom:14px}
     fetch("https://raw.githubusercontent.com/FabioGianesella/passagens/main/config.json?t=" + Date.now(), { cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (c) {
+        if (c && +c.teto > 0 && +c.teto !== state.tetoOv && Date.now() - state.tetoTs > 5 * 60e3 && !(window.__dirty && window.__dirty())) {
+          state.tetoOv = Math.round(+c.teto); render();
+        }
         if (!validWin(c)) return;
         var cfg = { idas: c.idas.slice().sort(), voltas: c.voltas.slice().sort() };
         if (sameWin(cfg, state.win)) return;
@@ -496,7 +503,7 @@ details.a-combos[open]>summary{margin-bottom:14px}
     var avg = r30.reduce(function (s, r) { return s + r.preco; }, 0) / r30.length;
     var dias = {}; rows.forEach(function (r) { dias[r.consulta] = 1; });
     var nDias = Object.keys(dias).length;
-    var teto = d.teto || 0;
+    var teto = tetoVal();
     var ARW = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12L12 4M5 4h7v7"/></svg>';
 
     function mainHtml(sel) {
@@ -534,6 +541,10 @@ details.a-combos[open]>summary{margin-bottom:14px}
       '<div class="pills sm" id="segDir"><button class="pill" data-v="all" aria-pressed="' + (state.direct === "all") + '">Todos</button><button class="pill" data-v="direct" aria-pressed="' + (state.direct === "direct") + '">Diretos</button></div></div>' +
       '<div class="sub" id="voosSub"></div><div class="vlist" id="vlist"></div></section>';
     if (d.janela) html += datasHtml();
+    html += '<section class="card a-teto fade" id="tetoCard"><div class="ch"><h2>Alerta de preço</h2></div>' +
+      '<div class="sub">Você recebe o aviso no celular quando o menor preço for igual ou menor que o teto.</div>' +
+      '<div class="tetorow"><label class="tetoin">R$<input type="number" inputmode="numeric" min="100" max="50000" step="50" id="tetoIn" aria-label="Teto do alerta em reais" value="' + (teto || "") + '"></label>' +
+      '<button type="button" class="btn" id="tetoSave">Salvar teto</button><span class="msg" id="tetoMsg"></span></div></section>';
     html += "</div>";
 
     app.innerHTML = html;
@@ -566,6 +577,7 @@ details.a-combos[open]>summary{margin-bottom:14px}
     select(selKey);
     if (d.janela) initDatas();
     drawChart();
+    initTeto();
 
     $("#foot").innerHTML = "Busca automática às 8h e 20h (próxima " + nextRun() + ").<br>Preços de ida e volta em reais · Fonte: Google Flights via SerpAPI.";
   }
@@ -590,6 +602,44 @@ details.a-combos[open]>summary{margin-bottom:14px}
       return '<div class="vo' + (i === 0 ? " top" : "") + '"><div><div class="t">' + esc(hhmm(v.saida)) + " → " + esc(hhmm(v.chegada)) + mais + '</div><div class="m">' +
         esc(v.origem) + " → " + esc(dest()) + "</div></div><div class=\"m\">" + esc(v.cia) + "<br>" + via + (v.duracao ? " · " + esc(durTxt(v.duracao)) : "") + '</div><div class="p">' + brl(v.preco) + "</div></div>";
     }).join("") + (link ? '<a class="btn" style="justify-self:start;margin-top:6px" href="' + esc(link) + '" target="_blank" rel="noopener">Ver no Google Flights</a>' : "");
+  }
+
+  function initTeto() {
+    var inp = $("#tetoIn"), btn = $("#tetoSave"), msg = $("#tetoMsg");
+    if (!inp) return;
+    var say = function (t, c) { msg.textContent = t; msg.className = "msg" + (c ? " " + c : ""); };
+    var base = function () { return state.win || (state.data && state.data.janela); };
+    btn.addEventListener("click", function () {
+      var v = Math.round(parseFloat(inp.value));
+      if (!(v >= 100 && v <= 50000)) { say("Informe um valor entre R$ 100 e R$ 50.000.", "err"); return; }
+      if (v === tetoVal()) { say("Este já é o teto atual.", ""); return; }
+      var tok = tokGet();
+      if (!tok) { say("Conecte o GitHub em Configurações para salvar.", "err"); openCfg(); return; }
+      btn.disabled = true; say("Salvando…");
+      var url = "https://api.github.com/repos/" + REPO + "/contents/" + CFG;
+      var H = { Authorization: "Bearer " + tok, Accept: "application/vnd.github+json" };
+      fetch(url + "?ref=main&t=" + Date.now(), { headers: H, cache: "no-store" })
+        .then(function (r) { if (r.status === 404) return {}; if (!r.ok) throw r.status; return r.json(); })
+        .then(function (f) {
+          var c = {};
+          try { c = JSON.parse(decodeURIComponent(escape(atob((f.content || "").replace(/\s/g, ""))))); } catch (e) { c = {}; }
+          if (!c || !c.idas || !c.voltas) { var w = base(); c = { idas: w.idas.slice(), voltas: w.voltas.slice() }; }
+          c.teto = v;
+          var body = { message: "Altera teto do alerta pelo painel", content: btoa(JSON.stringify(c, null, 2) + "\n"), branch: "main" };
+          if (f && f.sha) body.sha = f.sha;
+          return fetch(url, { method: "PUT", headers: H, body: JSON.stringify(body) });
+        })
+        .then(function (r) {
+          if (!r.ok) throw r.status;
+          state.tetoOv = v; state.tetoTs = Date.now();
+          render();
+          var m = $("#tetoMsg"); if (m) { m.textContent = "Teto salvo: R$ " + v + ". Vale a partir da próxima busca."; m.className = "msg ok"; }
+        })
+        .catch(function (c) {
+          btn.disabled = false;
+          say(c === 401 || c === 403 || c === 404 ? "O GitHub recusou o token (erro " + c + "). Confira a permissão de escrita em Contents." : "Não foi possível salvar. Tente de novo.", "err");
+        });
+    });
   }
 
   function setPressed(sel, btn) {
@@ -673,7 +723,7 @@ details.a-combos[open]>summary{margin-bottom:14px}
     var cur = { idas: j.idas.slice(), voltas: j.voltas.slice() }, draft = { idas: j.idas.slice(), voltas: j.voltas.slice() };
     var pick = { ida: null, volta: null }, view = hoje.slice(0, 7);
     var waiting = state.waiting;
-    var cfgJson = function () { return JSON.stringify({ idas: draft.idas, voltas: draft.voltas }, null, 2) + "\n"; };
+    var cfgJson = function () { return JSON.stringify(tetoVal() ? { idas: draft.idas, voltas: draft.voltas, teto: tetoVal() } : { idas: draft.idas, voltas: draft.voltas }, null, 2) + "\n"; };
     var same = function () { return JSON.stringify(draft.idas) === JSON.stringify(cur.idas) && JSON.stringify(draft.voltas) === JSON.stringify(cur.voltas); };
     var pares = function () { var n = 0; draft.idas.forEach(function (i) { draft.voltas.forEach(function (v) { if (noites(i, v) >= min) n++; }); }); return n; };
     var say = function (t, cls) { var m = $("#dMsg"); m.textContent = t || ""; m.className = "msg" + (cls ? " " + cls : ""); };
@@ -789,7 +839,7 @@ details.a-combos[open]>summary{margin-bottom:14px}
   }
 
   function drawDonut(by, avg) {
-    var j = state.data.janela, min = j.min_noites || 0, teto = state.data.teto || 0;
+    var j = state.data.janela, min = j.min_noites || 0, teto = tetoVal();
     var low = 0, high = 0, none = 0;
     j.idas.forEach(function (i) { j.voltas.forEach(function (v) {
       if (Math.round((new Date(v) - new Date(i)) / 864e5) < min) return;
@@ -846,7 +896,7 @@ details.a-combos[open]>summary{margin-bottom:14px}
     }
     var W = host.clientWidth, H = 300, pl = 48, pr = 12, pt = 14, pb = 28;
     var avgs = days.map(function (x) { return sum[x] / cnt[x]; });
-    var vals = days.map(function (x) { return byDay[x]; }).concat(avgs), teto = state.data.teto || 0;
+    var vals = days.map(function (x) { return byDay[x]; }).concat(avgs), teto = tetoVal();
     var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
     if (teto) { lo = Math.min(lo, teto); hi = Math.max(hi, teto); }
     var pad = (hi - lo) * 0.15 || hi * 0.05 || 10; lo = Math.max(0, lo - pad); hi += pad;
