@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="light dark"><meta name="theme-color" content="#120c07">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Passagens">
@@ -12,19 +12,13 @@
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <style>
-:root{
-  --ink:#0f1f1e; --inkon:#ffffff; --panel:rgba(247,249,252,.9); --card:rgba(255,255,255,.72); --cardb:rgba(255,255,255,.95);
-  --solid:#ffffff; --text:#14202b; --muted:#6a7581; --line:rgba(20,32,43,.1);
-  --accent:#2f8cf0; --blue:#2f8cf0; --orange:#f5821f; --good:#18884a; --warn:#b25e00; --chip:rgba(20,32,43,.06);
-  --p1:#fff0e4; --p2:#e7f3ff; --p3:#f1ebff; --p4:#e5f7ec; --shadow:0 30px 80px rgba(40,50,80,.2);
-  --bg:linear-gradient(115deg,#ffb27a 0%,#ecc9ad 24%,#b8c7d8 58%,#7ea6d6 100%);
-}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#f2f4f7;--inkon:#10161d;--panel:rgba(22,26,34,.84);--card:rgba(255,255,255,.05);--cardb:rgba(255,255,255,.09);--solid:#232a35;--text:#f2f4f7;--muted:#97a1ad;--line:rgba(255,255,255,.13);--accent:#4aa3ff;--blue:#4aa3ff;--orange:#ff9a3d;--good:#3ddc84;--warn:#ffb340;--chip:rgba(255,255,255,.08);--p1:rgba(255,154,61,.17);--p2:rgba(74,163,255,.17);--p3:rgba(160,120,255,.17);--p4:rgba(61,220,132,.14);--shadow:0 30px 80px rgba(0,0,0,.5);--bg:linear-gradient(115deg,#6b3a17 0%,#2b2a35 38%,#1a2b44 75%,#1f4a7a 100%);}}
-:root[data-theme="dark"]{--ink:#f2f4f7;--inkon:#10161d;--panel:rgba(22,26,34,.84);--card:rgba(255,255,255,.05);--cardb:rgba(255,255,255,.09);--solid:#232a35;--text:#f2f4f7;--muted:#97a1ad;--line:rgba(255,255,255,.13);--accent:#4aa3ff;--blue:#4aa3ff;--orange:#ff9a3d;--good:#3ddc84;--warn:#ffb340;--chip:rgba(255,255,255,.08);--p1:rgba(255,154,61,.17);--p2:rgba(74,163,255,.17);--p3:rgba(160,120,255,.17);--p4:rgba(61,220,132,.14);--shadow:0 30px 80px rgba(0,0,0,.5);--bg:linear-gradient(115deg,#6b3a17 0%,#2b2a35 38%,#1a2b44 75%,#1f4a7a 100%);}
+:root{--ink:#1a130c;--inkon:#ffffff;--panel:transparent;--card:rgba(255,255,255,.74);--cardb:rgba(255,255,255,.9);--solid:#ffffff;--text:#2a1c0e;--muted:#7d6c59;--line:rgba(60,35,10,.13);--accent:#e9871a;--blue:#e9871a;--orange:#8d7a63;--good:#17803f;--warn:#a85a00;--chip:rgba(90,55,15,.07);--p1:rgba(247,162,51,.22);--p2:rgba(255,255,255,.7);--p3:rgba(247,162,51,.12);--p4:rgba(255,255,255,.6);--shadow:none;--bg:radial-gradient(120% 70% at 50% -8%,#ffb347 0%,#ffd39a 30%,#fff0d8 62%,#fff8ee 100%);--dots:rgba(150,80,10,.16);--nav:rgba(255,255,255,.8);--bgc:#fff8ee}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#ffffff;--inkon:#1a130c;--panel:transparent;--card:rgba(34,27,20,.78);--cardb:rgba(255,205,140,.11);--solid:#2a2118;--text:#f7efe4;--muted:#a99d8f;--line:rgba(255,214,160,.17);--accent:#f7a233;--blue:#f7a233;--orange:#d8c7b0;--good:#8fdca3;--warn:#ffb454;--chip:rgba(255,214,160,.09);--p1:rgba(247,162,51,.17);--p2:rgba(255,255,255,.07);--p3:rgba(247,162,51,.10);--p4:rgba(255,255,255,.05);--shadow:none;--bg:radial-gradient(120% 70% at 50% -8%,#f5a02e 0%,#c9661a 22%,#5a2c10 46%,#1a110a 72%,#120c07 100%);--dots:rgba(255,205,140,.20);--nav:rgba(26,19,12,.82);--bgc:#120c07}}
+:root[data-theme="dark"]{--ink:#ffffff;--inkon:#1a130c;--panel:transparent;--card:rgba(34,27,20,.78);--cardb:rgba(255,205,140,.11);--solid:#2a2118;--text:#f7efe4;--muted:#a99d8f;--line:rgba(255,214,160,.17);--accent:#f7a233;--blue:#f7a233;--orange:#d8c7b0;--good:#8fdca3;--warn:#ffb454;--chip:rgba(255,214,160,.09);--p1:rgba(247,162,51,.17);--p2:rgba(255,255,255,.07);--p3:rgba(247,162,51,.10);--p4:rgba(255,255,255,.05);--shadow:none;--bg:radial-gradient(120% 70% at 50% -8%,#f5a02e 0%,#c9661a 22%,#5a2c10 46%,#1a110a 72%,#120c07 100%);--dots:rgba(255,205,140,.20);--nav:rgba(26,19,12,.82);--bgc:#120c07}
 *{box-sizing:border-box;margin:0}
 html{-webkit-text-size-adjust:100%}
 body{
-  background:var(--bg) fixed; color:var(--text); min-height:100vh; padding:28px 28px max(28px,env(safe-area-inset-bottom));
+  background:var(--bg) fixed no-repeat; color:var(--text); min-height:100vh; padding:28px 28px max(28px,env(safe-area-inset-bottom));
   font:400 16px/1.45 "SF Pro Rounded","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,sans-serif;
   -webkit-font-smoothing:antialiased; letter-spacing:-.012em;
 }
@@ -272,6 +266,26 @@ details.a-combos[open]>summary{margin-bottom:14px}
 .tetorow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:6px}
 .tetoin{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:0 16px;height:46px;background:var(--card)}
 .tetoin input{border:0;background:transparent;color:var(--text);font:inherit;font-size:18px;font-weight:600;width:90px;outline:none}
+/* ---- visual inspirado no estilo escuro/âmbar (Arqon): brilho quente, pontilhado, navegação em pílula ---- */
+body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background-image:radial-gradient(var(--dots) 1.1px,transparent 1.3px);background-size:22px 22px;-webkit-mask-image:linear-gradient(#000 0%,rgba(0,0,0,.15) 70%,transparent 100%);mask-image:linear-gradient(#000 0%,rgba(0,0,0,.15) 70%,transparent 100%)}
+html{background-color:var(--bgc)}
+body{padding-top:18px;background-color:var(--bgc)}
+.app{position:relative;z-index:1;background:none;border:0;border-radius:0;box-shadow:none;padding:0;-webkit-backdrop-filter:none;backdrop-filter:none}
+.top{position:sticky;top:12px;z-index:20;background:var(--nav);border:1px solid var(--line);border-radius:999px;padding:9px 12px 9px 12px;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 10px 40px rgba(0,0,0,.18)}
+.logo{background:linear-gradient(135deg,#ffc14d,#f08a1c);color:#1a130c;border-radius:12px}
+.brand{font-size:21px}
+.body{margin-top:34px}
+header.hd{flex-direction:column-reverse;align-items:center;text-align:center;justify-content:center;gap:18px;margin-bottom:30px}
+.hd .s{font-size:16px;color:var(--muted)}
+h1{font-weight:600;letter-spacing:-.05em}
+.route{padding:7px 18px 7px 8px;gap:10px;font-size:14px;background:var(--nav)}
+.route svg{width:28px;height:28px;padding:6px;border-radius:50%;background:linear-gradient(135deg,#ffc14d,#f08a1c);color:#1a130c}
+.card{border-radius:28px;background:var(--card);border:1px solid var(--cardb);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.btn{box-shadow:0 6px 22px rgba(0,0,0,.18)}
+.big{background:linear-gradient(180deg,var(--text) 55%,var(--accent));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.pill[aria-pressed="true"]{box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.vo.top,.cell.sel{border-color:var(--accent);outline-color:var(--accent)}
+@media (max-width:640px){body{padding:12px 12px max(20px,env(safe-area-inset-bottom))}.top{border-radius:28px;top:8px}}
 </style>
 </head>
 <body>
