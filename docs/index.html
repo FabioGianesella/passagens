@@ -396,6 +396,7 @@ h1{font-weight:600;letter-spacing:-.05em}
   };
   var escalas = function (n) { return n === 0 ? "Direto" : n + (n === 1 ? " escala" : " escalas"); };
 
+  var BUILD = "20261028-multi";
   var state = { range: "30", direct: "all", all: null, trs: [], tid: "", wait: {}, data: null, polling: false };
   var ID_PADRAO = "sp-aju", MAXT = 5;
   var sameWin = function (a, b) { return !!a && !!b && JSON.stringify(a.idas) === JSON.stringify(b.idas) && JSON.stringify(a.voltas) === JSON.stringify(b.voltas); };
@@ -439,7 +440,7 @@ h1{font-weight:600;letter-spacing:-.05em}
       if (!t || !t.idas || !t.voltas || !t.idas.length || !t.voltas.length || !t.origens || !t.destino) return;
       var o = { id: String(t.id || "t" + (i + 1)), nome: String(t.nome || ""), origens: String(t.origens), destino: String(t.destino),
         teto: Math.round(+t.teto) >= 100 ? Math.round(+t.teto) : 1500, idas: t.idas.slice().sort(), voltas: t.voltas.slice().sort() };
-      if (!o.nome) o.nome = autoNome(o);
+      if (!o.nome || o.nome === "Sao Paulo > Aracaju") o.nome = autoNome(o);
       out.push(o);
     });
     return out;
@@ -571,6 +572,11 @@ h1{font-weight:600;letter-spacing:-.05em}
     });
     render();
     window.addEventListener("resize", drawChart);
+    // versao antiga em cache? busca a publicada e recarrega uma vez com endereco novo
+    fetch("index.html?b=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.text(); }).then(function (t) {
+      var m = /var BUILD = "([^"]+)"/.exec(t);
+      if (m && m[1] !== BUILD) { try { if (sessionStorage.getItem("rl") === m[1]) return; sessionStorage.setItem("rl", m[1]); } catch (e) {} location.replace(location.pathname + "?v=" + m[1]); }
+    }).catch(function () {});
   }
 
   function nextRun() {
