@@ -25,6 +25,19 @@
         "2026-12-04"
       ],
       "teto": 1500
+    },
+    {
+      "id": "tmvtwgt4q",
+      "nome": "Carnaval",
+      "origens": "AJU",
+      "destino": "REC",
+      "idas": [
+        "2026-11-28"
+      ],
+      "voltas": [
+        "2026-12-05"
+      ],
+      "teto": 1500
     }
   ]
 }
