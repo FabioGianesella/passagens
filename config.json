@@ -38,6 +38,19 @@
         "2026-12-31"
       ],
       "teto": 1500
+    },
+    {
+      "id": "tmvvh9hjx",
+      "nome": "Viagem Dança Lu",
+      "origens": "CGH,GRU,VCP",
+      "destino": "AJU",
+      "idas": [
+        "2026-11-29"
+      ],
+      "voltas": [
+        "2026-12-06"
+      ],
+      "teto": 1500
     }
   ]
 }
