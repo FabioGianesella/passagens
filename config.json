@@ -14,19 +14,6 @@
       "teto": 1400
     },
     {
-      "id": "tmvsewphg",
-      "nome": "Férias",
-      "origens": "CGH,GRU,VCP",
-      "destino": "GIG",
-      "idas": [
-        "2026-11-27"
-      ],
-      "voltas": [
-        "2026-12-04"
-      ],
-      "teto": 1500
-    },
-    {
       "id": "tmvvh9hjx",
       "nome": "Viagem Dança Lu",
       "origens": "CGH,GRU,VCP",
