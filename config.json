@@ -1,19 +1,6 @@
 {
   "trajetos": [
     {
-      "id": "sp-aju",
-      "nome": "São Paulo → Aracaju",
-      "origens": "CGH,GRU,VCP",
-      "destino": "AJU",
-      "idas": [
-        "2026-11-25"
-      ],
-      "voltas": [
-        "2026-11-28"
-      ],
-      "teto": 1400
-    },
-    {
       "id": "tmvvh9hjx",
       "nome": "Viagem Dança Lu",
       "origens": "CGH,GRU,VCP",
