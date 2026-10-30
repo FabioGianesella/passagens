@@ -27,19 +27,6 @@
       "teto": 1500
     },
     {
-      "id": "tmvtwgt4q",
-      "nome": "Carnaval",
-      "origens": "AJU",
-      "destino": "REC",
-      "idas": [
-        "2026-12-16"
-      ],
-      "voltas": [
-        "2026-12-31"
-      ],
-      "teto": 1500
-    },
-    {
       "id": "tmvvh9hjx",
       "nome": "Viagem Dança Lu",
       "origens": "CGH,GRU,VCP",
